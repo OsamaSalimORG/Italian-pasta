@@ -325,14 +325,6 @@ export default function App() {
 
       {/* Floating cart */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col items-center gap-2">
-        {discountTiers.length > 0 && (
-          <span
-            className="glass rounded-full px-3 py-1 text-[9px] tracking-[0.25em] text-gold/90 whitespace-nowrap"
-            style={{ boxShadow: "0 0 12px rgba(212,168,67,0.25)" }}
-          >
-            {t.addMoreSaveMore}
-          </span>
-        )}
         <button
           onClick={() => setCartOpen(true)}
           className="w-14 h-14 rounded-full glass-strong text-gold grid place-items-center hover:scale-105 transition float-slow"
@@ -349,6 +341,14 @@ export default function App() {
             </span>
           )}
         </button>
+        {discountTiers.length > 0 && (
+          <span
+            className="glass rounded-full px-3 py-1 text-[9px] tracking-[0.25em] text-gold/90 whitespace-nowrap"
+            style={{ boxShadow: "0 0 12px rgba(212,168,67,0.25)" }}
+          >
+            {t.addMoreSaveMore}
+          </span>
+        )}
       </div>
 
       {/* Cart drawer */}
