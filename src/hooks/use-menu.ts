@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { fetchMenuData, getCategories } from "@/services/google-sheets";
-import type { MenuItem } from "@/types/menu";
+import { fetchMenuData, fetchDiscountTiers, getCategories } from "@/services/google-sheets";
+import type { MenuItem, DiscountTier } from "@/types/menu";
 
 export function useMenuData() {
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [discountTiers, setDiscountTiers] = useState<DiscountTier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -13,9 +14,13 @@ export function useMenuData() {
       try {
         setLoading(true);
         const data = await fetchMenuData();
-        if (!cancelled) {
-          setItems(data);
-          setError(null);
+        if (cancelled) return;
+        setItems(data);
+        setError(null);
+        try {
+          setDiscountTiers(await fetchDiscountTiers());
+        } catch {
+          setDiscountTiers([]);
         }
       } catch (err) {
         if (!cancelled) {
@@ -36,7 +41,7 @@ export function useMenuData() {
 
   const categories = useMemo(() => getCategories(items), [items]);
 
-  return { items, loading, error, categories };
+  return { items, loading, error, categories, discountTiers };
 }
 
 export function useMenuFilter(items: MenuItem[]) {

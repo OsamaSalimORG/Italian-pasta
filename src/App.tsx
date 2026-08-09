@@ -10,6 +10,7 @@ import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import { Sparticles } from "@/components/Sparticles";
 import { getDriveThumbnailUrl, getDriveImageFallbackUrl, getPlaceholderImage, handleImageError } from "@/services/google-drive";
+import { getDiscountPercent } from "@/services/google-sheets";
 import type { MenuItem } from "@/types/menu";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -67,7 +68,13 @@ export default function App() {
     addToCart: isAr ? "أضف إلى الطلب" : "Add to Order",
     yourCart: isAr ? "طلبك" : "Your Order",
     empty: isAr ? "طلبك فارغ." : "Your order is empty.",
+    subtotalLabel: isAr ? "المجموع الفرعي" : "Subtotal",
+    discountLabel: isAr ? "الخصم" : "Discount",
     total: isAr ? "الإجمالي" : "Total",
+    discountApplied: (pct: number, itemsCount: number) =>
+      isAr
+        ? `خصم ${pct}% مطبّق على ${itemsCount} أصناف`
+        : `${pct}% discount applied on ${itemsCount} items`,
     checkout: isAr ? "إتمام الطلب" : "Reserve & Order",
     nameField: isAr ? "الاسم" : "Name",
     phoneField: isAr ? "رقم الهاتف" : "Phone Number",
@@ -115,7 +122,7 @@ export default function App() {
   }, []);
 
   // Menu data from Google Sheets
-  const { items, loading, error, categories } = useMenuData();
+  const { items, loading, error, categories, discountTiers } = useMenuData();
   const { search, setSearch, activeCategory, setActiveCategory, filtered } = useMenuFilter(items);
 
   // Cart
@@ -129,6 +136,9 @@ export default function App() {
   const [formErrors, setFormErrors] = useState<{ name?: boolean; phone?: boolean; address?: boolean; pickupTime?: boolean }>({});
   const cartCount = Object.values(cart).reduce((a, b) => a + b, 0);
   const subtotal = items.reduce((sum, it) => sum + (cart[it.id] || 0) * it.price, 0);
+  const discountPercent = getDiscountPercent(discountTiers, cartCount);
+  const discountAmount = Math.round((subtotal * discountPercent) / 100);
+  const totalAfterDiscount = subtotal - discountAmount;
   const add = useCallback((id: string) => setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 })), []);
   const remove = useCallback(
     (id: string) =>
@@ -159,7 +169,8 @@ export default function App() {
         return `• ${name} x${cart[it.id]} — ${(it.price * cart[it.id]).toLocaleString()} IQD`;
       });
 
-    const totalAmount = subtotal.toLocaleString();
+    const subtotalAmount = subtotal.toLocaleString();
+    const totalAmount = totalAfterDiscount.toLocaleString();
     const msg = [
       `🍽 *365 Order*`,
       ``,
@@ -172,13 +183,17 @@ export default function App() {
       ...orderLines,
       ``,
       `---`,
+      `💵 *Subtotal: ${subtotalAmount} IQD*`,
+      ...(discountPercent > 0
+        ? [`🎉 *Discount (${discountPercent}%): -${discountAmount.toLocaleString()} IQD*`]
+        : []),
       `💰 *Total: ${totalAmount} IQD*`,
     ].join("\n");
 
     const phone = "9647729204005";
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
-  }, [cart, items, custName, custPhone, custAddress, custPickupTime, subtotal, isAr]);
+  }, [cart, items, custName, custPhone, custAddress, custPickupTime, subtotal, totalAfterDiscount, discountPercent, discountAmount, isAr]);
   useEffect(() => {
     if (filtered.length > 0) {
       requestAnimationFrame(() => ScrollTrigger.refresh());
@@ -380,9 +395,24 @@ export default function App() {
             {cartCount > 0 && (
               <div className="mt-8 space-y-4">
                 <div className="hairline" />
+                {discountPercent > 0 && (
+                  <p className="text-[10px] tracking-[0.2em] text-gold/90">
+                    {t.discountApplied(discountPercent, cartCount)}
+                  </p>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs tracking-[0.3em] text-foreground/60">{t.subtotalLabel.toUpperCase()}</span>
+                  <span className="text-sm text-foreground/80 font-mono">{subtotal.toLocaleString()} {t.iqd}</span>
+                </div>
+                {discountPercent > 0 && (
+                  <div className="flex items-center justify-between text-gold">
+                    <span className="text-xs tracking-[0.3em]">{t.discountLabel.toUpperCase()} ({discountPercent}%)</span>
+                    <span className="text-sm font-mono">-{discountAmount.toLocaleString()} {t.iqd}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="text-xs tracking-[0.3em] text-foreground/60">{t.total.toUpperCase()}</span>
-                  <span className="text-2xl text-gold font-mono">{subtotal.toLocaleString()} {t.iqd}</span>
+                  <span className="text-2xl text-gold font-mono">{totalAfterDiscount.toLocaleString()} {t.iqd}</span>
                 </div>
                 <div className="space-y-3 pt-2">
                   <div>

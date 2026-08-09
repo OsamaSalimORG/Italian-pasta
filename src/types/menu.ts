@@ -29,3 +29,9 @@ export type Category = string;
 export interface SheetRow {
   [key: string]: string;
 }
+
+export interface DiscountTier {
+  min: number;
+  max: number;
+  percent: number;
+}

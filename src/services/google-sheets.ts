@@ -1,5 +1,5 @@
 import { config } from "@/config";
-import type { MenuItem, SheetRow } from "@/types/menu";
+import type { MenuItem, SheetRow, DiscountTier } from "@/types/menu";
 
 function buildDriveUrl(fileId: string): string {
   if (!fileId) return "";
@@ -134,4 +134,44 @@ export function getCategories(items: MenuItem[]): CategoryItem[] {
     { key: "all", labelEn: "All", labelAr: "الكل" },
     ...Array.from(map.values()),
   ];
+}
+
+export async function fetchDiscountTiers(): Promise<DiscountTier[]> {
+  const { spreadsheetId, apiKey } = config.googleSheets;
+  const range = `${config.googleSheets.discountSheetName}!A:Z`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?key=${apiKey}`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Google Sheets API error: ${response.status}`);
+  }
+
+  const json = await response.json();
+  const values: string[][] = json.values || [];
+  if (values.length < 2) return [];
+
+  const headers = values[0].map((h) => (h || "").trim().toLowerCase());
+  const minIdx = headers.findIndex((h) => h.includes("min"));
+  const maxIdx = headers.findIndex((h) => h.includes("max"));
+  const pctIdx = headers.findIndex((h) => h.includes("discount") || h.includes("%") || h.includes("percent"));
+  if (minIdx === -1 || pctIdx === -1) return [];
+
+  const tiers: DiscountTier[] = [];
+  values.slice(1).forEach((row) => {
+    const min = Number(row[minIdx]);
+    const percent = Number(row[pctIdx]);
+    if (!Number.isFinite(min) || !Number.isFinite(percent)) return;
+    let max = maxIdx !== -1 ? Number(row[maxIdx]) : Infinity;
+    if (!Number.isFinite(max) || max <= 0) max = Infinity;
+    tiers.push({ min, max, percent });
+  });
+
+  return tiers.sort((a, b) => a.min - b.min);
+}
+
+export function getDiscountPercent(tiers: DiscountTier[], quantity: number): number {
+  for (const tier of tiers) {
+    if (quantity >= tier.min && quantity <= tier.max) return tier.percent;
+  }
+  return 0;
 }
