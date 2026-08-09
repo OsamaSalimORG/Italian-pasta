@@ -82,6 +82,7 @@ export default function App() {
     loading: isAr ? "…جاري التحميل" : "Loading menu…",
     catAll: isAr ? "الكل" : "All",
     searchPlaceholder: isAr ? "ابحث عن طبق..." : "Search for a dish...",
+    addMoreSaveMore: isAr ? "أضف المزيد، وفّر أكثر" : "Add more, save more.",
     footerLine: isAr
       ? "365 · وُلد للحظات التي تستحق التوقف"
       : "365 · CRAFTED FOR MOMENTS WORTH PAUSING FOR",
@@ -323,22 +324,32 @@ export default function App() {
       </footer>
 
       {/* Floating cart */}
-      <button
-        onClick={() => setCartOpen(true)}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full glass-strong text-gold grid place-items-center hover:scale-105 transition float-slow"
-        aria-label="Open order"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="9" cy="21" r="1" />
-          <circle cx="20" cy="21" r="1" />
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-        </svg>
-        {cartCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-gold text-primary-foreground text-[10px] w-5 h-5 rounded-full grid place-items-center font-semibold">
-            {cartCount}
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-center gap-2">
+        {discountTiers.length > 0 && (
+          <span
+            className="glass rounded-full px-3 py-1 text-[9px] tracking-[0.25em] text-gold/90 whitespace-nowrap"
+            style={{ boxShadow: "0 0 12px rgba(212,168,67,0.25)" }}
+          >
+            {t.addMoreSaveMore}
           </span>
         )}
-      </button>
+        <button
+          onClick={() => setCartOpen(true)}
+          className="w-14 h-14 rounded-full glass-strong text-gold grid place-items-center hover:scale-105 transition float-slow"
+          aria-label="Open order"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+          </svg>
+          {cartCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-gold text-primary-foreground text-[10px] w-5 h-5 rounded-full grid place-items-center font-semibold">
+              {cartCount}
+            </span>
+          )}
+        </button>
+      </div>
 
       {/* Cart drawer */}
       {cartOpen && (
