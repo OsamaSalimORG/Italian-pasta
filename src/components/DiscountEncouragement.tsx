@@ -27,7 +27,7 @@ export function DiscountEncouragement({ tiers, quantity, isAr }: DiscountEncoura
     return (
       <div className="rounded-xl border border-gold/30 bg-gold/10 px-4 py-3 text-center">
         <p className="text-xs font-medium tracking-wide text-gold">
-          {isAr ? "🎉 فكّكت أفضل خصم لدينا!" : "🎉 Best discount unlocked!"}
+          {isAr ? "🎉 وصلت أفضل خصم لدينا!" : "🎉 Best discount unlocked!"}
         </p>
         <p className="mt-0.5 text-[10px] text-foreground/60">
           {isAr
@@ -51,7 +51,7 @@ export function DiscountEncouragement({ tiers, quantity, isAr }: DiscountEncoura
       <p className="text-xs font-medium tracking-wide text-gold">
         {unlocked
           ? isAr
-            ? `🎉 تم فك خصم ${currentPercent}%!`
+            ? `🎉 تم اضافة خصم ${currentPercent}%!`
             : `🎉 ${currentPercent}% OFF unlocked!`
           : isAr
             ? `🛍️ أضف ${nWord}`
@@ -63,7 +63,7 @@ export function DiscountEncouragement({ tiers, quantity, isAr }: DiscountEncoura
             ? `أضف ${nWord} للوصول إلى خصم ${targetTier.percent}%`
             : `Add ${nWord} more to reach ${targetTier.percent}% OFF.`
           : isAr
-            ? `→ فكّ خصم ${targetTier.percent}%`
+            ? `→ وافتح خصم ${targetTier.percent}%`
             : `→ Unlock ${targetTier.percent}% OFF`}
       </p>
       <div className="mt-2 flex items-center gap-2">
