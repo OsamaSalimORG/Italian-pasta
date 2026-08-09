@@ -170,8 +170,9 @@ export async function fetchDiscountTiers(): Promise<DiscountTier[]> {
 }
 
 export function getDiscountPercent(tiers: DiscountTier[], quantity: number): number {
+  let percent = 0;
   for (const tier of tiers) {
-    if (quantity >= tier.min && quantity <= tier.max) return tier.percent;
+    if (quantity >= tier.min) percent = tier.percent;
   }
-  return 0;
+  return percent;
 }
