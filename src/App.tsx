@@ -60,7 +60,7 @@ export default function App() {
   const isAr = lang === "ar";
   const t = {
     menuKicker: isAr ? "القائمة" : "THE MENU",
-    menuTitle: isAr ? "مذاق 365" : "THE 365 SELECTION",
+    menuTitle: isAr ? "اختيارات 365" : "THE 365 SELECTION",
     menuSub: isAr
       ? "أطباق موقّعة، معكرونة، وحلويات — تُقدَّم كما يقدَّم فيلم."
       : "Signature plates, pasta, and dessert — plated the way a film is edited.",
