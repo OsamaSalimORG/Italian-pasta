@@ -38,7 +38,7 @@ function LoadingScreen({ ready, progress }: { ready: boolean; progress: number }
         className="text-4xl md:text-5xl tracking-[0.25em] text-gold-glow mb-6"
         style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
       >
-        COVO
+        365
       </span>
       <div className="w-40 h-[2px] bg-white/10 rounded-full overflow-hidden mb-4">
         <div
@@ -60,7 +60,7 @@ export default function App() {
   const [lang, setLang] = useState<"en" | "ar">("en");
   const isAr = lang === "ar";
   const t = {
-    tagline: isAr ? "مطعم كوفو · تجربة سينمائية فاخرة" : "Restaurant & Lounge",
+    tagline: isAr ? "مطعم 365 · تجربة سينمائية فاخرة" : "Restaurant & Lounge",
     hero1: isAr ? "خطوة" : "STEP",
     hero2: isAr ? "إلى الداخل" : "INSIDE",
     scrollHint: isAr ? "مرّر للدخول" : "SCROLL TO ENTER",
@@ -78,7 +78,7 @@ export default function App() {
       ? "قوس من الحجر يفتح على مسرح النار والدقة."
       : "A stone arch opens onto a stage of fire and precision.",
     menuKicker: isAr ? "القائمة" : "THE MENU",
-    menuTitle: isAr ? "مذاق كوفو" : "THE COVO SELECTION",
+    menuTitle: isAr ? "مذاق 365" : "THE 365 SELECTION",
     menuSub: isAr
       ? "أطباق موقّعة، معكرونة، وحلويات — تُقدَّم كما يقدَّم فيلم."
       : "Signature plates, pasta, and dessert — plated the way a film is edited.",
@@ -97,8 +97,8 @@ export default function App() {
     catAll: isAr ? "الكل" : "All",
     searchPlaceholder: isAr ? "ابحث عن طبق..." : "Search for a dish...",
     footerLine: isAr
-      ? "كوفو · وُلد للحظات التي تستحق التوقف"
-      : "COVO · CRAFTED FOR MOMENTS WORTH PAUSING FOR",
+      ? "365 · وُلد للحظات التي تستحق التوقف"
+      : "365 · CRAFTED FOR MOMENTS WORTH PAUSING FOR",
   };
 
   // --- Refs for zero-render scroll progress ---
@@ -336,7 +336,7 @@ export default function App() {
 
     const totalAmount = subtotal.toLocaleString();
     const msg = [
-      `🍽 *COVO Order*`,
+      `🍽 *365 Order*`,
       ``,
       `👤 *${custName}*`,
       `📞 ${custPhone}`,
@@ -382,7 +382,7 @@ export default function App() {
               className={`text-2xl md:text-3xl tracking-[0.25em] text-gold-glow ${isAr ? "font-arabic" : ""}`}
               style={{ fontFamily: isAr ? undefined : "var(--font-display)" }}
             >
-              COVO
+              365
             </span>
           </a>
           <nav className="flex items-center gap-4 md:gap-8 text-[10px] md:text-[11px] tracking-[0.28em] text-foreground/70">
@@ -601,14 +601,14 @@ export default function App() {
             className={`text-3xl tracking-[0.35em] text-gold-glow mb-3 ${isAr ? "font-arabic" : ""}`}
             style={{ fontFamily: isAr ? undefined : "var(--font-display)" }}
           >
-            COVO
+            365
           </div>
           <p className={`text-[11px] tracking-[0.35em] text-foreground/50 ${isAr ? "font-arabic tracking-normal" : ""}`}>
             {t.footerLine}
           </p>
           <div className="hairline max-w-xs mx-auto my-6" />
           <p className="text-[10px] tracking-[0.3em] text-foreground/30 font-mono">
-            © {new Date().getFullYear()} COVO · ALL RIGHTS RESERVED
+            © {new Date().getFullYear()} 365 · ALL RIGHTS RESERVED
           </p>
         </div>
       </footer>
