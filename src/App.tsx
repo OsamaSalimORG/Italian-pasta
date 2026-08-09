@@ -229,7 +229,7 @@ export default function App() {
       {/* ============ MENU ============ */}
       <section ref={menuSectionRef} id="menu" className="relative bg-noir overflow-hidden">
         <Sparticles count={40} />
-        <div className="relative -mt-24 pt-24 pb-16">
+        <div className="relative pt-36 pb-16">
           <div className="max-w-4xl mx-auto text-center px-6 fade-up">
             <p className="text-[11px] tracking-[0.5em] text-gold mb-5">— {t.menuKicker} —</p>
             <h2
