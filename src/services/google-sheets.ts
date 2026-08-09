@@ -169,10 +169,35 @@ export async function fetchDiscountTiers(): Promise<DiscountTier[]> {
   return tiers.sort((a, b) => a.min - b.min);
 }
 
-export function getDiscountPercent(tiers: DiscountTier[], quantity: number): number {
-  let percent = 0;
-  for (const tier of tiers) {
-    if (quantity >= tier.min) percent = tier.percent;
+export interface DiscountState {
+  currentPercent: number;
+  firstTier: DiscountTier;
+  highestTier: DiscountTier;
+  nextTier: DiscountTier | null;
+  highestReached: boolean;
+}
+
+export function getDiscountState(tiers: DiscountTier[], quantity: number): DiscountState | null {
+  if (!tiers || tiers.length === 0) return null;
+  const sorted = [...tiers].sort((a, b) => a.min - b.min);
+  const highestTier = sorted[sorted.length - 1];
+  const firstTier = sorted[0];
+
+  let currentPercent = 0;
+  let nextTier: DiscountTier | null = null;
+
+  for (const tier of sorted) {
+    // The highest tier has no effective upper bound — it covers everything from its min up.
+    const max = tier === highestTier ? Infinity : tier.max;
+    if (quantity >= tier.min && quantity <= max) {
+      currentPercent = tier.percent;
+    }
+    if (!nextTier && tier.min > quantity) {
+      nextTier = tier;
+    }
   }
-  return percent;
+
+  const highestReached = quantity >= highestTier.min;
+
+  return { currentPercent, firstTier, highestTier, nextTier, highestReached };
 }

@@ -10,8 +10,9 @@ import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import { Sparticles } from "@/components/Sparticles";
 import { getDriveThumbnailUrl, getDriveImageFallbackUrl, getPlaceholderImage, handleImageError } from "@/services/google-drive";
-import { getDiscountPercent } from "@/services/google-sheets";
+import { getDiscountState } from "@/services/google-sheets";
 import type { MenuItem } from "@/types/menu";
+import { DiscountEncouragement } from "@/components/DiscountEncouragement";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -71,10 +72,6 @@ export default function App() {
     subtotalLabel: isAr ? "المجموع الفرعي" : "Subtotal",
     discountLabel: isAr ? "الخصم" : "Discount",
     total: isAr ? "الإجمالي" : "Total",
-    discountApplied: (pct: number, itemsCount: number) =>
-      isAr
-        ? `خصم ${pct}% مطبّق على ${itemsCount} أصناف`
-        : `${pct}% discount applied on ${itemsCount} items`,
     checkout: isAr ? "إتمام الطلب" : "Reserve & Order",
     nameField: isAr ? "الاسم" : "Name",
     phoneField: isAr ? "رقم الهاتف" : "Phone Number",
@@ -136,7 +133,8 @@ export default function App() {
   const [formErrors, setFormErrors] = useState<{ name?: boolean; phone?: boolean; address?: boolean; pickupTime?: boolean }>({});
   const cartCount = Object.values(cart).reduce((a, b) => a + b, 0);
   const subtotal = items.reduce((sum, it) => sum + (cart[it.id] || 0) * it.price, 0);
-  const discountPercent = getDiscountPercent(discountTiers, cartCount);
+  const discountState = getDiscountState(discountTiers, cartCount);
+  const discountPercent = discountState?.currentPercent ?? 0;
   const discountAmount = Math.round((subtotal * discountPercent) / 100);
   const totalAfterDiscount = subtotal - discountAmount;
   const add = useCallback((id: string) => setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 })), []);
@@ -395,11 +393,7 @@ export default function App() {
             {cartCount > 0 && (
               <div className="mt-8 space-y-4">
                 <div className="hairline" />
-                {discountPercent > 0 && (
-                  <p className="text-[10px] tracking-[0.2em] text-gold/90">
-                    {t.discountApplied(discountPercent, cartCount)}
-                  </p>
-                )}
+                <DiscountEncouragement tiers={discountTiers} quantity={cartCount} isAr={isAr} />
                 <div className="flex items-center justify-between">
                   <span className="text-xs tracking-[0.3em] text-foreground/60">{t.subtotalLabel.toUpperCase()}</span>
                   <span className="text-sm text-foreground/80 font-mono">{subtotal.toLocaleString()} {t.iqd}</span>
