@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { FrameCanvas } from "@/components/FrameSequence";
 import { useMenuData, useMenuFilter } from "@/hooks/use-menu";
 import { SearchBar } from "@/components/SearchBar";
 import { CategoryFilter } from "@/components/CategoryFilter";
@@ -60,23 +59,6 @@ export default function App() {
   const [lang, setLang] = useState<"en" | "ar">("en");
   const isAr = lang === "ar";
   const t = {
-    tagline: isAr ? "مطعم 365 · تجربة سينمائية فاخرة" : "Restaurant & Lounge",
-    hero1: isAr ? "خطوة" : "STEP",
-    hero2: isAr ? "إلى الداخل" : "INSIDE",
-    scrollHint: isAr ? "مرّر للدخول" : "SCROLL TO ENTER",
-    goToMenu: isAr ? "عرض القائمة" : "Go to Menu",
-    chapter1Title: isAr ? "الواجهة" : "THE FAÇADE",
-    chapter1Body: isAr
-      ? "حجر منحوت. ضوء دافئ. مساء يبدأ بلمسة كاميرا."
-      : "Hand-cut stone. Warm light. An evening that begins with a single frame.",
-    chapter2Title: isAr ? "الدخول" : "CROSS THE THRESHOLD",
-    chapter2Body: isAr
-      ? "خطوة واحدة تفصل بين المدينة والصمت المضاء."
-      : "One step separates the city from the lit-in silence.",
-    chapter3Title: isAr ? "المطبخ الحيّ" : "THE LIVE KITCHEN",
-    chapter3Body: isAr
-      ? "قوس من الحجر يفتح على مسرح النار والدقة."
-      : "A stone arch opens onto a stage of fire and precision.",
     menuKicker: isAr ? "القائمة" : "THE MENU",
     menuTitle: isAr ? "مذاق 365" : "THE 365 SELECTION",
     menuSub: isAr
@@ -101,141 +83,8 @@ export default function App() {
       : "365 · CRAFTED FOR MOMENTS WORTH PAUSING FOR",
   };
 
-  // --- Refs for zero-render scroll progress ---
-  const progressRef = useRef(0);
-  const canvasContainerRef = useRef<HTMLDivElement>(null);
-  const chapter1Ref = useRef<HTMLDivElement>(null);
-  const chapter2Ref = useRef<HTMLDivElement>(null);
-  const chapter3Ref = useRef<HTMLDivElement>(null);
-  const progressBarRef = useRef<HTMLDivElement>(null);
-  const progressTextRef = useRef<HTMLSpanElement>(null);
-  const cinemaRef = useRef<HTMLDivElement>(null);
-  const canvasScaleRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const lenisRef = useRef<any>(null);
   const menuSectionRef = useRef<HTMLElement>(null);
   const menuGridRef = useRef<HTMLDivElement>(null);
-
-  // Smooth scroll via lenis
-  useEffect(() => {
-    let raf = 0;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let lenis: any = null;
-    let cancelled = false;
-    const mobile = window.innerWidth < 768;
-    import("lenis").then(({ default: Lenis }) => {
-      if (cancelled) return;
-      lenis = new Lenis({
-        lerp: mobile ? 0.08 : 0.06,
-        wheelMultiplier: mobile ? 0.5 : 0.7,
-        smoothWheel: true,
-        touchMultiplier: 1.2,
-        duration: 1.8,
-      });
-      lenisRef.current = lenis;
-      const loop = (t: number) => {
-        lenis?.raf(t);
-        ScrollTrigger.update();
-        raf = requestAnimationFrame(loop);
-      };
-      raf = requestAnimationFrame(loop);
-    });
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(raf);
-      lenisRef.current = null;
-      lenis?.destroy();
-    };
-  }, []);
-
-  // --- GSAP ScrollTrigger for cinematic section (zero React re-renders) ---
-  useEffect(() => {
-    const cinema = cinemaRef.current;
-    const canvasContainer = canvasScaleRef.current;
-    if (!cinema || !canvasContainer) return;
-
-    const mobile = window.innerWidth < 768;
-
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: cinema,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: 0.3,
-        onUpdate: (self) => {
-          progressRef.current = self.progress;
-        },
-      },
-    });
-
-    // Canvas scale — GPU-composited only
-    tl.to(canvasContainer, { scale: 1.14, ease: "none", duration: 1 }, 0);
-
-    // Chapter reveals — opacity + translateY only
-    const chapters = [chapter1Ref, chapter2Ref, chapter3Ref];
-    const ranges: [number, number][] = mobile
-      ? [[0, 0.25], [0.3, 0.55], [0.6, 0.85]]
-      : [[0, 0.22], [0.28, 0.48], [0.5, 0.7]];
-
-    chapters.forEach((ref, i) => {
-      if (!ref.current) return;
-      const [start, end] = ranges[i];
-      if (i === 0) {
-        // Hero text: visible immediately, only fade out on scroll
-        gsap.set(ref.current, { opacity: 1, y: 0 });
-      } else {
-        gsap.fromTo(
-          ref.current,
-          { opacity: 0, y: 20 },
-          {
-            opacity: 1,
-            y: 0,
-            ease: "power1.out",
-            scrollTrigger: {
-              trigger: cinema,
-              start: `top+=${start * 100}% top`,
-              end: `top+=${end * 100}% top`,
-              scrub: true,
-            },
-          }
-        );
-      }
-      // Fade out
-      gsap.to(ref.current, {
-        opacity: 0,
-        ease: "power1.in",
-        scrollTrigger: {
-          trigger: cinema,
-          start: `top+=${end * 100}% top`,
-          end: `top+=${end * 100 + 0.06 * 100}% top`,
-          scrub: true,
-        },
-      });
-    });
-
-    // Progress bar
-    if (progressBarRef.current) {
-      tl.to(progressBarRef.current, { scaleY: 1, ease: "none", duration: 1 }, 0);
-    }
-
-    // ScrollTrigger for progress text
-    ScrollTrigger.create({
-      trigger: cinema,
-      start: "top top",
-      end: "bottom bottom",
-      onUpdate: (self) => {
-        if (progressTextRef.current) {
-          progressTextRef.current.textContent =
-            String(Math.round(self.progress * 100)).padStart(2, "0") + "%";
-        }
-      },
-    });
-
-    return () => {
-      tl.kill();
-      ScrollTrigger.getAll().forEach((s) => s.kill());
-    };
-  }, []);
 
   // --- GSAP ScrollTrigger for menu reveals ---
   useEffect(() => {
@@ -268,30 +117,6 @@ export default function App() {
   // Menu data from Google Sheets
   const { items, loading, error, categories } = useMenuData();
   const { search, setSearch, activeCategory, setActiveCategory, filtered } = useMenuFilter(items);
-
-  // Preload ALL frames + menu data
-  const [loadProgress, setLoadProgress] = useState(0);
-  const [pageReady, setPageReady] = useState(false);
-
-  useEffect(() => {
-    const base = import.meta.env.BASE_URL;
-    const total = 86;
-    let loaded = 0;
-
-    const promises = Array.from({ length: total }, (_, i) => {
-      return new Promise<void>((resolve) => {
-        const img = new Image();
-        img.onload = img.onerror = () => {
-          loaded++;
-          setLoadProgress(Math.round((loaded / total) * 100));
-          resolve();
-        };
-        img.src = `${base}frames/frame-${String(i + 1).padStart(3, "0")}.jpg`;
-      });
-    });
-
-    Promise.all(promises).then(() => setPageReady(true));
-  }, []);
 
   // Cart
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -360,8 +185,6 @@ export default function App() {
     }
   }, [filtered.length]);
 
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-
   const handleRetry = () => {
     window.location.reload();
   };
@@ -372,12 +195,12 @@ export default function App() {
       dir={isAr ? "rtl" : "ltr"}
       lang={isAr ? "ar" : "en"}
     >
-      <LoadingScreen ready={pageReady && !loading} progress={loadProgress} />
+      <LoadingScreen ready={!loading} progress={loading ? 30 : 100} />
 
       {/* Fixed floating navbar */}
       <header className="fixed top-4 inset-x-0 z-50 px-4 md:px-8">
         <div className="max-w-6xl mx-auto glass rounded-full px-5 md:px-8 py-3 flex items-center justify-between">
-          <a href="#top" className="flex items-center gap-2">
+          <a href="#menu" className="flex items-center gap-2">
             <span
               className={`text-2xl md:text-3xl tracking-[0.25em] text-gold-glow ${isAr ? "font-arabic" : ""}`}
               style={{ fontFamily: isAr ? undefined : "var(--font-display)" }}
@@ -402,133 +225,6 @@ export default function App() {
           </div>
         </div>
       </header>
-
-      {/* ============ CINEMATIC SCROLL ============ */}
-      <section
-        id="top"
-        ref={cinemaRef}
-        className="relative"
-        style={{ height: isMobile ? "300vh" : "500vh" }}
-      >
-        <div className="sticky top-0 h-[100dvh] w-full overflow-hidden">
-          <div
-            ref={canvasScaleRef}
-            className="absolute inset-0 will-change-transform pointer-events-none"
-            style={{ transformOrigin: "center center" }}
-          >
-            <FrameCanvas progressRef={progressRef} className="w-full h-full block" />
-          </div>
-
-          <div className="pointer-events-none absolute inset-0"
-               style={{
-                 background:
-                   "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%), linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 20%, transparent 70%, rgba(0,0,0,0.7) 100%)",
-               }}
-          />
-          <div className="pointer-events-none absolute inset-0 bg-radial-gold opacity-70 mix-blend-screen" />
-
-          {/* Chapter 1 */}
-          <div
-            ref={chapter1Ref}
-            className="absolute inset-0 flex flex-col items-center justify-center pt-24 md:pt-0 text-center px-6 will-change-[opacity,transform] pointer-events-auto"
-          >
-            <p className="text-[11px] tracking-[0.5em] text-gold/80 mb-6" style={{ textShadow: "0 0 12px rgba(212,168,67,0.7), 0 0 30px rgba(212,168,67,0.4)" }}>{t.tagline}</p>
-            <h1
-              className={`text-6xl md:text-[9rem] leading-[0.9] text-gold-glow ${isAr ? "font-arabic" : ""}`}
-              style={{ fontFamily: isAr ? undefined : "var(--font-display)", fontWeight: 400, letterSpacing: "0.02em" }}
-            >
-              {t.hero1}
-              <br />
-              <span className="italic text-foreground/95">{t.hero2}</span>
-            </h1>
-            <div className="mt-10 flex flex-col items-center gap-3 text-[11px] tracking-[0.4em] text-gold glow-pulse-strong">
-              <span className="w-10 h-px bg-gold/80" />
-              {t.scrollHint}
-              <span className="w-10 h-px bg-gold/80" />
-              <svg
-                width="44"
-                height="44"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-gold mt-2 bounce-arrow drop-shadow-[0_0_16px_rgba(212,168,67,1)] drop-shadow-[0_0_40px_rgba(212,168,67,0.6)]"
-              >
-                <path d="M12 5v14" />
-                <path d="m19 12-7 7-7-7" />
-              </svg>
-              <button
-                onClick={() => {
-                  const el = menuSectionRef.current;
-                  if (el) {
-                    lenisRef.current?.scrollTo(el, {
-                      offset: 0,
-                      duration: 2.5,
-                      onComplete: () => {
-                        ScrollTrigger.refresh(true);
-                      },
-                    });
-                  }
-                }}
-                className="mt-4 px-6 py-2 rounded-full border border-gold/40 text-gold text-[11px] tracking-[0.25em] hover:bg-gold/10 hover:border-gold/70 transition pointer-events-auto relative z-50"
-                style={{ textShadow: "0 0 12px rgba(212,168,67,0.6), 0 0 30px rgba(212,168,67,0.3)" }}
-              >
-                {t.goToMenu}
-              </button>
-            </div>
-          </div>
-
-          {/* Chapter 2 */}
-          <div
-            ref={chapter2Ref}
-            className="absolute inset-x-0 bottom-24 flex flex-col items-center justify-end text-center px-6 will-change-[opacity,transform] pointer-events-none"
-          >
-            <div className="rounded-2xl px-8 py-6 max-w-xl" style={{ backdropFilter: "blur(20px) saturate(120%)", background: "rgba(10,8,6,0.7)" }}>
-              <p className="text-[10px] tracking-[0.5em] text-gold mb-3">— 01 —</p>
-              <h2
-                className={`text-3xl md:text-5xl mb-3 ${isAr ? "font-arabic" : ""}`}
-                style={{ fontFamily: isAr ? undefined : "var(--font-display)", fontStyle: "italic" }}
-              >
-                {t.chapter1Title}
-              </h2>
-              <p className={`text-sm md:text-base text-foreground/70 ${isAr ? "font-arabic" : ""}`}>{t.chapter1Body}</p>
-            </div>
-          </div>
-
-          {/* Chapter 3 */}
-          <div
-            ref={chapter3Ref}
-            className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col items-center text-center px-6 will-change-[opacity,transform] pointer-events-none"
-          >
-            <div className="rounded-2xl px-8 py-6 max-w-xl" style={{ backdropFilter: "blur(20px) saturate(120%)", background: "rgba(10,8,6,0.7)" }}>
-              <p className="text-[10px] tracking-[0.5em] text-gold mb-3">— 02 —</p>
-              <h2
-                className={`text-3xl md:text-5xl mb-3 ${isAr ? "font-arabic" : ""}`}
-                style={{ fontFamily: isAr ? undefined : "var(--font-display)", fontStyle: "italic" }}
-              >
-                {t.chapter2Title}
-              </h2>
-              <p className={`text-sm md:text-base text-foreground/70 ${isAr ? "font-arabic" : ""}`}>{t.chapter2Body}</p>
-            </div>
-          </div>
-
-          {/* Progress indicator */}
-          <div className="absolute top-1/2 right-4 md:right-8 -translate-y-1/2 flex flex-col items-center gap-3">
-            <div className="w-px h-40 bg-white/10 relative overflow-hidden">
-              <div
-                ref={progressBarRef}
-                className="absolute top-0 left-0 w-full bg-gold will-change-transform"
-                style={{ transform: "scaleY(0)", transformOrigin: "top", boxShadow: "0 0 10px var(--gold)" }}
-              />
-            </div>
-            <span ref={progressTextRef} className="text-[9px] tracking-[0.3em] text-foreground/40 [writing-mode:vertical-rl]">
-              00%
-            </span>
-          </div>
-        </div>
-      </section>
 
       {/* ============ MENU ============ */}
       <section ref={menuSectionRef} id="menu" className="relative bg-noir overflow-hidden">
