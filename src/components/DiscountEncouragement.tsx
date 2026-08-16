@@ -127,9 +127,9 @@ export function DiscountEncouragement({ tiers, quantity, isAr }: DiscountEncoura
   const need = Math.max(1, targetTier.min - quantity);
   const nWord = isAr ? itemsWordAr(need) : `${need} ${need === 1 ? "item" : "items"}`;
 
-  // Progress bar fills 0% → 100% across the current tier's span, then resets for the next tier.
-  const span = currentTier ? currentTier.max - currentTier.min : 0;
-  const progress = Math.min(100, Math.max(0, ((quantity - (currentTier?.min ?? 0)) / (span || 1)) * 100));
+  // Progress bar fills based on quantity / current tier max → 100% triggers party, then next tier starts.
+  const tierMax = currentTier?.max ?? 0;
+  const progress = tierMax > 0 ? Math.min(100, (quantity / tierMax) * 100) : 0;
 
   const unlocked = currentPercent > 0;
 
@@ -163,7 +163,7 @@ export function DiscountEncouragement({ tiers, quantity, isAr }: DiscountEncoura
               />
             </div>
             <span className="text-[9px] whitespace-nowrap text-foreground/50">
-              {isAr ? `${quantity} / ${targetTier.min} أصناف` : `${quantity} / ${targetTier.min} items`}
+              {isAr ? `${quantity} / ${tierMax || quantity} أصناف` : `${quantity} / ${tierMax || quantity} items`}
             </span>
           </div>
         </div>
