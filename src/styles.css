@@ -140,6 +140,96 @@
 .glow-pulse-strong { animation: glowPulseStrong 3s ease-in-out infinite; }
 @keyframes loadingBar { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } }
 
+.discount-glow {
+  position: relative;
+  padding: 1px;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+/* Moving glowing border */
+.discount-glow::before {
+  content: "";
+  position: absolute;
+  inset: -150%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 250deg,
+    rgba(255, 120, 40, 0) 270deg,
+    rgba(255, 150, 70, 0.9) 290deg,
+    rgba(255, 220, 150, 1) 305deg,
+    rgba(100, 180, 255, 0.8) 320deg,
+    rgba(150, 100, 255, 0.5) 335deg,
+    transparent 350deg,
+    transparent 360deg
+  );
+  animation: rotateGlow 5s linear infinite;
+}
+
+/* Blurred glow behind the border */
+.discount-glow::after {
+  content: "";
+  position: absolute;
+  inset: -30px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 250deg,
+    rgba(255, 120, 40, 0.35) 290deg,
+    rgba(255, 220, 150, 0.5) 305deg,
+    rgba(80, 160, 255, 0.3) 325deg,
+    transparent 350deg
+  );
+  filter: blur(35px);
+  animation: rotateGlow 5s linear infinite;
+  z-index: -1;
+}
+
+@keyframes rotateGlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.discount-glow-inner {
+  position: relative;
+  z-index: 2;
+  border-radius: calc(var(--radius-xl) - 1px);
+  background:
+    radial-gradient(circle at 70% 20%, oklch(0.82 0.13 80 / 12%), transparent 40%),
+    linear-gradient(135deg, oklch(0.13 0.012 60 / 98%), oklch(0.09 0.008 60 / 98%));
+  border: 1px solid oklch(1 0 0 / 8%);
+  box-shadow: inset 0 0 40px oklch(1 0 0 / 1.5%);
+}
+
+.confetti-burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+  overflow: visible;
+}
+.confetti-piece {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  opacity: 1;
+  animation: confettiFly 1s cubic-bezier(0.3, 0, 0.7, 1) forwards;
+}
+@keyframes confettiFly {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(0.8);
+    opacity: 0;
+  }
+}
+
 .hairline { height: 1px; background: linear-gradient(90deg, transparent, oklch(0.82 0.13 80 / 40%), transparent); }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
