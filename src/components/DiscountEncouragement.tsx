@@ -16,7 +16,16 @@ function itemsWordAr(n: number): string {
   return `${n} صنفًا`;
 }
 
-const CONFETTI_COLORS = ["#fbbf24", "#f59e0b", "#f97316", "#ef4444", "#ec4899", "#a855f7", "#3b82f6", "#22c55e", "#eab308"];
+const CONFETTI_COLORS = [
+  "#d4af37",
+  "#e5c158",
+  "#c84b31",
+  "#db5a42",
+  "#606c38",
+  "#7c8b4b",
+  "#fbf8f2",
+  "#eedfc8",
+];
 
 function randomRange(min: number, max: number): number {
   return min + Math.random() * (max - min);

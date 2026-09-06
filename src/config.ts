@@ -1,6 +1,6 @@
 export const config = {
   googleSheets: {
-    spreadsheetId: "1f5YqnGVjt-xrEp42MNwR5queZ_ppTXNlFxw0L8SSPPg",
+    spreadsheetId: "1LEsjxS81OfFJVdZ6zVc9a0xlTXDOjFA-el9d8IqKglc",
     apiKey: "AIzaSyBwjRABXS_K3qAaPPef54jb478SAA-3_Bk",
     sheetName: "Sheet1",
     discountSheetName: "discount",

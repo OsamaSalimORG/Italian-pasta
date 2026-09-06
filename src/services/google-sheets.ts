@@ -1,5 +1,6 @@
 import { config } from "@/config";
 import type { MenuItem, SheetRow, DiscountTier } from "@/types/menu";
+import { ITALIAN_MENU_ITEMS } from "@/data/italian-menu";
 
 function buildDriveUrl(fileId: string): string {
   if (!fileId) return "";
@@ -34,7 +35,7 @@ function parseSheetRow(row: SheetRow, index: number): MenuItem {
   };
 }
 
-const CACHE_KEY = "menu_365_data";
+const CACHE_KEY = "menu_italianpasta_v1";
 let cachedData: { data: MenuItem[]; timestamp: number } | null = null;
 
 function readLocalCache(): MenuItem[] | null {
@@ -85,6 +86,7 @@ async function fetchFromSheets(): Promise<MenuItem[]> {
 /**
  * Stale-while-revalidate: returns cached data instantly,
  * fetches fresh data in background and updates.
+ * If sheets contains non-pasta legacy items, defaults to curated La Piazza menu.
  */
 export async function fetchMenuData(): Promise<MenuItem[]> {
   const now = Date.now();
@@ -100,17 +102,27 @@ export async function fetchMenuData(): Promise<MenuItem[]> {
     cachedData = { data: local, timestamp: now };
     // Revalidate in background (don't block UI)
     fetchFromSheets().then((fresh) => {
-      cachedData = { data: fresh, timestamp: Date.now() };
-      writeLocalCache(fresh);
+      const isLegacy = fresh.some((i) => i.category.toLowerCase().includes("hot appetizer") || i.name.toLowerCase().includes("wing"));
+      const finalItems = isLegacy || fresh.length === 0 ? ITALIAN_MENU_ITEMS : fresh;
+      cachedData = { data: finalItems, timestamp: Date.now() };
+      writeLocalCache(finalItems);
     }).catch(() => { /* keep using cached */ });
     return local;
   }
 
-  // 3. First visit — fetch and wait
-  const data = await fetchFromSheets();
-  cachedData = { data, timestamp: now };
-  writeLocalCache(data);
-  return data;
+  // 3. First visit — fetch or fallback to curated Italian pasta menu
+  try {
+    const data = await fetchFromSheets();
+    const isLegacy = data.some((i) => i.category.toLowerCase().includes("hot appetizer") || i.name.toLowerCase().includes("wing"));
+    const finalData = isLegacy || data.length === 0 ? ITALIAN_MENU_ITEMS : data;
+    cachedData = { data: finalData, timestamp: now };
+    writeLocalCache(finalData);
+    return finalData;
+  } catch {
+    cachedData = { data: ITALIAN_MENU_ITEMS, timestamp: now };
+    writeLocalCache(ITALIAN_MENU_ITEMS);
+    return ITALIAN_MENU_ITEMS;
+  }
 }
 
 export interface CategoryItem {
@@ -119,24 +131,53 @@ export interface CategoryItem {
   labelAr: string;
 }
 
+const CANONICAL_ORDER = [
+  { key: "all", labelEn: "ALL", labelAr: "الكل" },
+  { key: "CLASSIC PASTA", labelEn: "CLASSIC PASTA", labelAr: "باستا كلاسيكية" },
+  { key: "CREAM SAUCES", labelEn: "CREAM SAUCES", labelAr: "صلصات الكريمة" },
+  { key: "TOMATO SAUCES", labelEn: "TOMATO SAUCES", labelAr: "صلصات الطماطم" },
+  { key: "SEAFOOD", labelEn: "SEAFOOD", labelAr: "المأكولات البحرية" },
+  { key: "SPECIALS", labelEn: "SPECIALS", labelAr: "أطباق الشيف" },
+];
+
 export function getCategories(items: MenuItem[]): CategoryItem[] {
-  const map = new Map<string, CategoryItem>();
-  items.forEach((i) => {
-    if (!map.has(i.category)) {
-      map.set(i.category, {
-        key: i.category,
-        labelEn: i.category,
-        labelAr: i.categoryAr || i.category,
-      });
+  const presentCategories = new Set(items.map((i) => i.category.toUpperCase().trim()));
+
+  const ordered: CategoryItem[] = [];
+
+  // Always start with "all"
+  ordered.push(CANONICAL_ORDER[0]);
+
+  // Add matching canonical categories
+  CANONICAL_ORDER.slice(1).forEach((cat) => {
+    if (presentCategories.has(cat.key)) {
+      ordered.push(cat);
+      presentCategories.delete(cat.key);
     }
   });
-  return [
-    { key: "all", labelEn: "All", labelAr: "الكل" },
-    ...Array.from(map.values()),
-  ];
+
+  // Add any remaining categories dynamically
+  items.forEach((i) => {
+    const keyUpper = i.category.toUpperCase().trim();
+    if (presentCategories.has(keyUpper)) {
+      ordered.push({
+        key: i.category,
+        labelEn: i.category.toUpperCase(),
+        labelAr: i.categoryAr || i.category,
+      });
+      presentCategories.delete(keyUpper);
+    }
+  });
+
+  return ordered;
 }
 
 export async function fetchDiscountTiers(): Promise<DiscountTier[]> {
+  const defaultTiers: DiscountTier[] = [
+    { min: 2, max: 3, percent: 5 },
+    { min: 4, max: 5, percent: 10 },
+    { min: 6, max: Infinity, percent: 15 },
+  ];
   const { spreadsheetId, apiKey } = config.googleSheets;
   const range = `${config.googleSheets.discountSheetName}!A:Z`;
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?key=${apiKey}`;

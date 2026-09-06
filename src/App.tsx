@@ -9,7 +9,8 @@ import { MenuLightbox } from "@/components/MenuLightbox";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import { Sparticles } from "@/components/Sparticles";
-import { getDriveThumbnailUrl, getDriveImageFallbackUrl, getPlaceholderImage, handleImageError } from "@/services/google-drive";
+import { ItalianDecorations } from "@/components/ItalianDecorations";
+import { getDriveThumbnailUrl, getPlaceholderImage, handleImageError } from "@/services/google-drive";
 import { getDiscountState } from "@/services/google-sheets";
 import type { MenuItem } from "@/types/menu";
 import { DiscountEncouragement } from "@/components/DiscountEncouragement";
@@ -23,7 +24,7 @@ function LoadingScreen({ ready, progress }: { ready: boolean; progress: number }
   useEffect(() => {
     if (ready) {
       setFading(true);
-      const t = setTimeout(() => setShow(false), 800);
+      const t = setTimeout(() => setShow(false), 700);
       return () => clearTimeout(t);
     }
   }, [ready]);
@@ -32,78 +33,89 @@ function LoadingScreen({ ready, progress }: { ready: boolean; progress: number }
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-noir transition-opacity duration-700"
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#120c08] transition-opacity duration-700"
       style={{ opacity: fading ? 0 : 1 }}
     >
       <span
-        className="text-4xl md:text-5xl tracking-[0.25em] text-gold-glow mb-6"
-        style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
+        className="text-4xl md:text-6xl tracking-[0.12em] text-[#d4af37] mb-2 font-normal"
+        style={{ fontFamily: "var(--font-display)" }}
       >
-        365
+        Italian Pasta
       </span>
-      <div className="w-40 h-[2px] bg-white/10 rounded-full overflow-hidden mb-4">
+      <span className="text-[10px] md:text-xs tracking-[0.45em] text-[#bdae9c] uppercase mb-8">
+        AUTHENTIC ITALIAN RESTAURANT
+      </span>
+      <div className="w-44 h-[2px] bg-[#2a2018] rounded-full overflow-hidden mb-3">
         <div
-          className="h-full bg-gold rounded-full transition-all duration-300"
+          className="h-full bg-[#d4af37] rounded-full transition-all duration-300"
           style={{ width: `${progress}%` }}
         />
       </div>
-      <span className="text-[11px] tracking-[0.3em] text-foreground/40">{progress}%</span>
+      <span className="text-[11px] tracking-[0.3em] text-[#bdae9c]/60 font-mono">{progress}%</span>
     </div>
   );
 }
 
 const NAV = [
   { en: "Menu", ar: "القائمة", href: "#menu" },
-  { en: "Reserve", ar: "احجز", href: "#reserve" },
+  { en: "Reserve", ar: "الحجوزات", href: "#reserve" },
 ];
 
 export default function App() {
   const [lang, setLang] = useState<"en" | "ar">("en");
   const isAr = lang === "ar";
+
   const t = {
-    menuKicker: isAr ? "القائمة" : "THE MENU",
-    menuTitle: isAr ? "اختيارات 365" : "THE 365 SELECTION",
-    menuSub: isAr
-      ? "أطباق موقّعة، معكرونة، وحلويات — تُقدَّم كما يقدَّم فيلم."
-      : "Signature plates, pasta, and dessert — plated the way a film is edited.",
-    addToCart: isAr ? "أضف إلى الطلب" : "Add to Order",
-    yourCart: isAr ? "طلبك" : "Your Order",
-    empty: isAr ? "طلبك فارغ." : "Your order is empty.",
+    brandName: isAr ? "إيطاليان باستا" : "Italian Pasta",
+    brandSubtitle: isAr ? "مطعم إيطالي وباستا طازجة" : "AUTHENTIC ITALIAN RESTAURANT",
+    heroKicker: isAr ? "قائمة أطباقنا" : "OUR MENU",
+    heroTitle: isAr ? "الباستا الإيطالية" : "ITALIAN PASTA",
+    heroTagline: isAr ? "«نكهات أصيلة، وتقاليد خالدة»" : "“Authentic Flavors, Timeless Traditions”",
+    heroDescription: isAr
+      ? "مكونات طازجة، باستا محضّرة يدويًا يوميًا، ووصفات عريقة مستوحاة من قلب إيطاليا."
+      : "Fresh ingredients, handmade pasta, and classic recipes from the heart of Italy.",
+    addToCart: isAr ? "أضف إلى الطلب" : "ADD TO ORDER",
+    yourCart: isAr ? "طلبك الحالي" : "Your Order",
+    empty: isAr ? "قائمة طلباتك فارغة حاليًا." : "Your order is empty.",
     subtotalLabel: isAr ? "المجموع الفرعي" : "Subtotal",
-    discountLabel: isAr ? "الخصم" : "Discount",
-    total: isAr ? "الإجمالي" : "Total",
-    checkout: isAr ? "إتمام الطلب" : "Reserve & Order",
-    nameField: isAr ? "الاسم" : "Name",
+    discountLabel: isAr ? "خصم خاص" : "Discount",
+    total: isAr ? "الإجمالي النهائي" : "Total",
+    checkout: isAr ? "إتمام الطلب عبر واتساب" : "Order via WhatsApp",
+    nameField: isAr ? "الاسم الكريم" : "Your Name",
     phoneField: isAr ? "رقم الهاتف" : "Phone Number",
-    addressField: isAr ? "العنوان" : "Address",
-    pickupTimeField: isAr ? "وقت الاستلام" : "Pickup Time",
+    addressField: isAr ? "عنوان التوصيل / الطاولة" : "Delivery Address or Table Number",
+    pickupTimeField: isAr ? "وقت الاستلام أو الحجز" : "Pickup / Dine-in Time",
     requiredField: isAr ? "هذا الحقل مطلوب" : "This field is required",
     iqd: isAr ? "د.ع" : "IQD",
-    loading: isAr ? "…جاري التحميل" : "Loading menu…",
-    catAll: isAr ? "الكل" : "All",
-    searchPlaceholder: isAr ? "ابحث عن طبق..." : "Search for a dish...",
-    addMoreSaveMore: isAr ? "أضف المزيد، وفّر أكثر" : "Add more, save more.",
-    footerLine: isAr
-      ? "365 · وُلد للحظات التي تستحق التوقف"
-      : "365 · CRAFTED FOR MOMENTS WORTH PAUSING FOR",
+    loading: isAr ? "…جاري تحضير القائمة" : "Loading authentic menu…",
+    searchPlaceholder: isAr ? "ابحث عن طبق باستا..." : "Search for a dish...",
+    addMoreSaveMore: isAr ? "أضف المزيد، وفّر أكثر" : "Add more, save more",
+    reserveHeading: isAr ? "احجز طاولتك في إيطاليان باستا" : "Reserve Your Table at Italian Pasta",
+    reserveSub: isAr
+      ? "استمتع بأمسية إيطالية دافئة وموسيقى هادئة مع ألذ أطباق الباستا الطازجة."
+      : "Experience a warm Italian evening with candlelight, fine wine, and fresh artisanal pasta.",
+    reserveBtn: isAr ? "حجز طاولة الآن" : "Book a Table via WhatsApp",
+    footerText: isAr
+      ? "إيطاليان باستا · حيث يلتقي الشغف الإيطالي بفنون الطهي العريقة"
+      : "Italian Pasta · Authentic Flavors, Handcrafted Daily with Italian Passion",
   };
 
   const menuSectionRef = useRef<HTMLElement>(null);
   const menuGridRef = useRef<HTMLDivElement>(null);
 
-  // --- GSAP ScrollTrigger for menu reveals ---
+  // GSAP ScrollTrigger for smooth menu reveal animations
   useEffect(() => {
     if (!menuGridRef.current) return;
 
     const cards = menuGridRef.current.querySelectorAll<HTMLElement>("[data-reveal]");
-    cards.forEach((el, i) => {
+    cards.forEach((el) => {
       gsap.fromTo(
         el,
-        { opacity: 0, y: 30 },
+        { opacity: 0, y: 25 },
         {
           opacity: 1,
           y: 0,
-          duration: 0.5,
+          duration: 0.6,
           ease: "power2.out",
           scrollTrigger: {
             trigger: el,
@@ -119,11 +131,11 @@ export default function App() {
     };
   }, []);
 
-  // Menu data from Google Sheets
+  // Menu data from Google Sheets or fallback authentic Italian catalog
   const { items, loading, error, categories, discountTiers } = useMenuData();
   const { search, setSearch, activeCategory, setActiveCategory, filtered } = useMenuFilter(items);
 
-  // Cart
+  // Cart & State
   const [cart, setCart] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [lightboxItem, setLightboxItem] = useState<MenuItem | null>(null);
@@ -131,13 +143,20 @@ export default function App() {
   const [custPhone, setCustPhone] = useState("");
   const [custAddress, setCustAddress] = useState("");
   const [custPickupTime, setCustPickupTime] = useState("");
-  const [formErrors, setFormErrors] = useState<{ name?: boolean; phone?: boolean; address?: boolean; pickupTime?: boolean }>({});
+  const [formErrors, setFormErrors] = useState<{
+    name?: boolean;
+    phone?: boolean;
+    address?: boolean;
+    pickupTime?: boolean;
+  }>({});
+
   const cartCount = Object.values(cart).reduce((a, b) => a + b, 0);
   const subtotal = items.reduce((sum, it) => sum + (cart[it.id] || 0) * it.price, 0);
   const discountState = getDiscountState(discountTiers, cartCount);
   const discountPercent = discountState?.currentPercent ?? 0;
   const discountAmount = Math.round((subtotal * discountPercent) / 100);
   const totalAfterDiscount = subtotal - discountAmount;
+
   const add = useCallback((id: string) => setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 })), []);
   const remove = useCallback(
     (id: string) =>
@@ -171,28 +190,43 @@ export default function App() {
     const subtotalAmount = subtotal.toLocaleString();
     const totalAmount = totalAfterDiscount.toLocaleString();
     const msg = [
-      `🍽 *365 Order*`,
+      `🍝 *Italian Pasta Restaurant — Order*`,
       ``,
-      `👤 *${custName}*`,
-      `📞 ${custPhone}`,
-      `📍 ${custAddress}`,
-      `🕐 *${custPickupTime}*`,
+      `👤 *Customer:* ${custName}`,
+      `📞 *Phone:* ${custPhone}`,
+      `📍 *Location / Table:* ${custAddress}`,
+      `🕐 *Time:* ${custPickupTime}`,
       ``,
-      `---`,
+      `--- *Dishes* ---`,
       ...orderLines,
       ``,
-      `---`,
-      `💵 *Subtotal: ${subtotalAmount} IQD*`,
+      `-----------------`,
+      `💵 *Subtotal:* ${subtotalAmount} IQD`,
       ...(discountPercent > 0
-        ? [`🎉 *Discount (${discountPercent}%): -${discountAmount.toLocaleString()} IQD*`]
+        ? [`🎉 *Discount (${discountPercent}%):* -${discountAmount.toLocaleString()} IQD`]
         : []),
-      `💰 *Total: ${totalAmount} IQD*`,
+      `💰 *Total Amount:* ${totalAmount} IQD`,
+      ``,
+      `Grazie mille! 🇮🇹`,
     ].join("\n");
 
     const phone = "9647729204005";
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
-  }, [cart, items, custName, custPhone, custAddress, custPickupTime, subtotal, totalAfterDiscount, discountPercent, discountAmount, isAr]);
+  }, [
+    cart,
+    items,
+    custName,
+    custPhone,
+    custAddress,
+    custPickupTime,
+    subtotal,
+    totalAfterDiscount,
+    discountPercent,
+    discountAmount,
+    isAr,
+  ]);
+
   useEffect(() => {
     if (filtered.length > 0) {
       requestAnimationFrame(() => ScrollTrigger.refresh());
@@ -205,61 +239,134 @@ export default function App() {
 
   return (
     <div
-      className={`relative min-h-screen bg-noir text-foreground ${isAr ? "font-arabic" : ""}`}
+      className={`relative min-h-screen bg-espresso-table text-[#fbf8f2] selection:bg-[#d4af37]/30 selection:text-[#fff9e6] ${
+        isAr ? "font-arabic" : ""
+      }`}
       dir={isAr ? "rtl" : "ltr"}
       lang={isAr ? "ar" : "en"}
     >
-      <LoadingScreen ready={!loading} progress={loading ? 30 : 100} />
+      <LoadingScreen ready={!loading} progress={loading ? 40 : 100} />
 
-      {/* Fixed floating navbar */}
-      <header className="fixed top-4 inset-x-0 z-50 px-4 md:px-8">
-        <div className="max-w-6xl mx-auto glass rounded-full px-5 md:px-8 py-3 flex items-center justify-between">
-          <a href="#menu" className="flex items-center gap-2">
+      {/* Decorative Italian Ingredients Layer (basil, tomato, wheat, parmesan, olive oil) */}
+      <ItalianDecorations />
+
+      {/* Ambient particles (fine flour dust & warm golden embers) */}
+      <Sparticles count={35} />
+
+      {/* ============ FIXED FLOATING NAVIGATION BAR ============ */}
+      <header className="fixed top-3 sm:top-5 inset-x-0 z-50 px-4 sm:px-6 md:px-8">
+        <div className="max-w-6xl mx-auto glass-italian rounded-full px-5 sm:px-8 py-3 flex items-center justify-between border border-[#d4af37]/25 shadow-[0_10px_35px_rgba(0,0,0,0.85)] bg-[#18110b]/75">
+          {/* Brand Logo & Subtitle */}
+          <a href="#menu" className="flex flex-col group">
             <span
-              className={`text-2xl md:text-3xl tracking-[0.25em] text-gold-glow ${isAr ? "font-arabic" : ""}`}
+              className="text-2xl sm:text-3xl tracking-[0.08em] text-[#d4af37] group-hover:text-[#e5c158] transition-colors font-normal leading-none"
               style={{ fontFamily: isAr ? undefined : "var(--font-display)" }}
             >
-              365
+              {t.brandName}
+            </span>
+            <span className="text-[8px] sm:text-[9px] tracking-[0.32em] text-[#bdae9c] uppercase mt-1">
+              {t.brandSubtitle}
             </span>
           </a>
-          <nav className="flex items-center gap-4 md:gap-8 text-[10px] md:text-[11px] tracking-[0.28em] text-foreground/70">
+
+          {/* Navigation Links */}
+          <nav className="hidden sm:flex items-center gap-6 md:gap-10 text-[11px] md:text-xs tracking-[0.25em] text-[#ede4d6]/80 font-medium">
             {NAV.map((l) => (
-              <a key={l.en} href={l.href} className="hover:text-foreground transition">
+              <a
+                key={l.en}
+                href={l.href}
+                className="hover:text-[#d4af37] transition-colors py-1 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-[#d4af37] hover:after:w-full after:transition-all"
+              >
                 {isAr ? l.ar : l.en.toUpperCase()}
               </a>
             ))}
           </nav>
+
+          {/* Action Area: Language Switcher & Quick Cart Trigger */}
           <div className="flex items-center gap-3">
+            {/* Language Switch */}
             <button
               onClick={() => setLang(isAr ? "en" : "ar")}
-              className="text-[11px] tracking-[0.25em] px-3 py-1 rounded-full border border-white/15 hover:border-gold/60 hover:text-gold transition"
+              className="text-[11px] tracking-[0.2em] px-3.5 py-1.5 rounded-full border border-[#d4af37]/35 text-[#ede4d6] hover:border-[#d4af37] hover:text-[#d4af37] hover:bg-[#d4af37]/10 transition-all duration-300 font-medium"
+              aria-label="Switch Language"
             >
-              {isAr ? "EN" : "ع"}
+              {isAr ? "ENGLISH" : "عربي"}
+            </button>
+
+            {/* Cart Icon in Header on Mobile */}
+            <button
+              onClick={() => setCartOpen(true)}
+              className="relative w-9 h-9 rounded-full border border-[#d4af37]/35 bg-[#d4af37]/10 text-[#d4af37] flex items-center justify-center hover:bg-[#d4af37] hover:text-[#120c08] transition-all"
+              aria-label="Open Cart"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[#c84b31] text-[#fbf8f2] text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-md">
+                  {cartCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
       </header>
 
-      {/* ============ MENU ============ */}
-      <section ref={menuSectionRef} id="menu" className="relative bg-noir overflow-hidden">
-        <Sparticles count={40} />
-        <div className="relative pt-36 pb-16">
-          <div className="max-w-4xl mx-auto text-center px-6 fade-up">
-            <p className="text-[11px] tracking-[0.5em] text-gold mb-5">— {t.menuKicker} —</p>
-            <h2
-              className={`text-5xl md:text-7xl mb-4 ${isAr ? "font-arabic" : ""}`}
-              style={{
-                fontFamily: isAr ? undefined : "var(--font-display)",
-                fontWeight: 300,
-                letterSpacing: "0.02em",
-              }}
-            >
-              {t.menuTitle}
-            </h2>
-            <div className="hairline max-w-xs mx-auto my-6" />
-            <p className={`text-foreground/60 max-w-xl mx-auto ${isAr ? "font-arabic" : ""}`}>{t.menuSub}</p>
+      {/* ============ HERO & MENU SECTION ============ */}
+      <section ref={menuSectionRef} id="menu" className="relative pt-32 sm:pt-40 pb-16 z-10 bg-transparent">
+        <div className="max-w-5xl mx-auto text-center px-6">
+          {/* Top Kicker */}
+          <div className="inline-flex items-center gap-3 mb-4">
+            <span className="w-8 h-[1px] bg-[#d4af37]/40" />
+            <p className="text-[11px] md:text-xs tracking-[0.45em] text-[#d4af37] uppercase font-semibold">
+              {t.heroKicker}
+            </p>
+            <span className="w-8 h-[1px] bg-[#d4af37]/40" />
           </div>
 
+          {/* Main Title: ITALIAN PASTA */}
+          <h1
+            className={`text-5xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight text-[#fbf8f2] font-normal mb-4 ${
+              isAr ? "font-arabic font-bold" : ""
+            }`}
+            style={{ fontFamily: isAr ? undefined : "var(--font-display)" }}
+          >
+            {t.heroTitle}
+          </h1>
+
+          {/* Italian Tagline */}
+          <p
+            className={`text-xl sm:text-2xl md:text-3xl text-[#d4af37] mb-5 italic font-serif ${
+              isAr ? "font-arabic not-italic font-medium" : ""
+            }`}
+          >
+            {t.heroTagline}
+          </p>
+
+          {/* Delicate Divider */}
+          <div className="italian-divider max-w-xs mx-auto my-5" />
+
+          {/* Supporting Text */}
+          <p
+            className={`text-sm sm:text-base text-[#c7baa8] max-w-2xl mx-auto leading-relaxed ${
+              isAr ? "font-arabic" : ""
+            }`}
+          >
+            {t.heroDescription}
+          </p>
+
+          {/* Category Filters */}
           <CategoryFilter
             categories={categories}
             active={activeCategory}
@@ -267,7 +374,8 @@ export default function App() {
             isAr={isAr}
           />
 
-          <div className="max-w-3xl mx-auto mt-6 px-6">
+          {/* Search Bar */}
+          <div className="max-w-2xl mx-auto mt-8">
             <SearchBar
               value={search}
               onChange={setSearch}
@@ -277,11 +385,13 @@ export default function App() {
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto px-6 pb-24" ref={menuGridRef}>
+        {/* ============ MENU CARDS GRID ============ */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 mt-12 pb-24" ref={menuGridRef}>
           {loading && <LoadingSkeleton />}
           {error && <ErrorMessage message={error} onRetry={handleRetry} />}
+
           {!loading && !error && (
-            <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+            <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
               {filtered.map((it) => (
                 <MenuCard
                   key={it.id}
@@ -295,175 +405,347 @@ export default function App() {
               ))}
             </div>
           )}
+
           {!loading && !error && filtered.length === 0 && items.length > 0 && (
-            <p className="text-center text-foreground/50 py-10 text-sm">No items found.</p>
-          )}
-          {!loading && !error && items.length === 0 && (
-            <p className="text-center text-foreground/50 py-10 text-sm">No menu items available.</p>
+            <div className="text-center py-16 px-4">
+              <p className="text-[#bdae9c] text-base mb-2">
+                {isAr ? "لم نجد أطباقًا تطابق بحثك." : "No pasta dishes found matching your search."}
+              </p>
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setActiveCategory("all");
+                }}
+                className="mt-3 text-xs tracking-[0.2em] text-[#d4af37] uppercase border-b border-[#d4af37]/40 hover:border-[#d4af37] pb-1 transition-colors"
+              >
+                {isAr ? "عرض جميع الأطباق" : "View All Dishes"}
+              </button>
+            </div>
           )}
         </div>
       </section>
 
-      {/* Footer */}
-      <footer id="reserve" className="relative border-t border-white/5 bg-ink">
-        <div className="max-w-6xl mx-auto px-6 py-14 text-center">
-          <div
-            className={`text-3xl tracking-[0.35em] text-gold-glow mb-3 ${isAr ? "font-arabic" : ""}`}
+      {/* ============ RESERVATION & ATMOSPHERE BANNER ============ */}
+      <section id="reserve" className="relative py-20 border-t border-[#d4af37]/15 bg-[#120c08]/80 backdrop-blur-md z-10">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <span className="text-[10px] tracking-[0.4em] text-[#d4af37] uppercase font-semibold block mb-3">
+            {isAr ? "تجربة لا تُنسى" : "AN UNFORGETTABLE EXPERIENCE"}
+          </span>
+          <h2
+            className={`text-3xl sm:text-4xl md:text-5xl text-[#fbf8f2] mb-4 font-normal ${
+              isAr ? "font-arabic font-bold" : ""
+            }`}
             style={{ fontFamily: isAr ? undefined : "var(--font-display)" }}
           >
-            365
-          </div>
-          <p className={`text-[11px] tracking-[0.35em] text-foreground/50 ${isAr ? "font-arabic tracking-normal" : ""}`}>
-            {t.footerLine}
+            {t.reserveHeading}
+          </h2>
+          <p
+            className={`text-sm sm:text-base text-[#c7baa8] max-w-xl mx-auto leading-relaxed mb-8 ${
+              isAr ? "font-arabic" : ""
+            }`}
+          >
+            {t.reserveSub}
           </p>
-          <div className="hairline max-w-xs mx-auto my-6" />
-          <p className="text-[10px] tracking-[0.3em] text-foreground/30 font-mono">
-            © {new Date().getFullYear()} 365 · ALL RIGHTS RESERVED
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a
+              href="https://wa.me/9647729204005?text=Hello%2C%20I%20would%20like%20to%20reserve%20a%20table%20at%20La%20Piazza."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full bg-[#d4af37] text-[#120c08] hover:bg-[#e5c158] px-8 py-3.5 text-xs tracking-[0.25em] font-semibold transition-all duration-300 shadow-[0_6px_25px_-5px_rgba(212,175,55,0.45)] uppercase"
+            >
+              {t.reserveBtn}
+            </a>
+            <button
+              onClick={() => setCartOpen(true)}
+              className="rounded-full border border-[#d4af37]/40 text-[#fbf8f2] hover:bg-[#d4af37]/10 px-8 py-3.5 text-xs tracking-[0.25em] font-medium transition-all uppercase"
+            >
+              {isAr ? "عرض طلبي الحالي" : "View Current Order"}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ FOOTER ============ */}
+      <footer className="relative border-t border-white/8 bg-[#0c0704]/92 backdrop-blur-sm z-10">
+        <div className="max-w-6xl mx-auto px-6 py-14 text-center">
+          <div
+            className="text-3xl sm:text-4xl tracking-[0.10em] text-[#d4af37] mb-2 font-normal"
+            style={{ fontFamily: isAr ? undefined : "var(--font-display)" }}
+          >
+            Italian Pasta
+          </div>
+          <p className="text-[10px] tracking-[0.4em] text-[#bdae9c] uppercase mb-4">
+            AUTHENTIC ITALIAN RESTAURANT & HANDMADE PASTA
+          </p>
+          <p
+            className={`text-xs text-[#bdae9c]/80 max-w-md mx-auto leading-relaxed ${
+              isAr ? "font-arabic" : ""
+            }`}
+          >
+            {t.footerText}
+          </p>
+          <div className="italian-divider max-w-xs mx-auto my-6" />
+          <p className="text-[10px] tracking-[0.25em] text-[#bdae9c]/50 font-mono">
+            © {new Date().getFullYear()} ITALIAN PASTA · ALL RIGHTS RESERVED
           </p>
         </div>
       </footer>
 
-      {/* Floating cart */}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-center gap-2">
+      {/* ============ FLOATING CART BUTTON ============ */}
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
+        {discountTiers.length > 0 && (
+          <span className="glass-italian rounded-full px-3.5 py-1 text-[9px] tracking-[0.22em] text-[#d4af37] shadow-[0_4px_15px_rgba(212,175,55,0.25)] border border-[#d4af37]/35 whitespace-nowrap font-medium">
+            {t.addMoreSaveMore}
+          </span>
+        )}
         <button
           onClick={() => setCartOpen(true)}
-          className="w-14 h-14 rounded-full glass-strong text-gold grid place-items-center hover:scale-105 transition float-slow"
+          className="w-14 h-14 rounded-full bg-[#1c1510] text-[#d4af37] border border-[#d4af37]/50 grid place-items-center hover:scale-108 transition-all duration-300 shadow-[0_12px_35px_rgba(0,0,0,0.8),0_0_20px_rgba(212,175,55,0.25)] hover:bg-[#d4af37] hover:text-[#120c08]"
           aria-label="Open order"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <circle cx="9" cy="21" r="1" />
             <circle cx="20" cy="21" r="1" />
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
           </svg>
           {cartCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-gold text-primary-foreground text-[10px] w-5 h-5 rounded-full grid place-items-center font-semibold">
+            <span className="absolute -top-1.5 -right-1.5 bg-[#c84b31] text-[#fbf8f2] text-[10px] w-5 h-5 rounded-full grid place-items-center font-bold shadow-md">
               {cartCount}
             </span>
           )}
         </button>
-        {discountTiers.length > 0 && (
-          <span
-            className="glass rounded-full px-3 py-1 text-[9px] tracking-[0.25em] text-gold/90 whitespace-nowrap"
-            style={{ boxShadow: "0 0 12px rgba(212,168,67,0.25)" }}
-          >
-            {t.addMoreSaveMore}
-          </span>
-        )}
       </div>
 
-      {/* Cart drawer */}
+      {/* ============ CART / ORDER DRAWER ============ */}
       {cartOpen && (
         <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setCartOpen(false)}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/75 backdrop-blur-md transition-opacity duration-300" />
           <aside
-            className="drawer-in relative w-full max-w-md bg-ink border-l border-white/10 h-full shadow-2xl p-6 overflow-y-auto"
+            className="drawer-slide relative w-full max-w-md bg-[#18110b]/98 border-l border-[#d4af37]/25 h-full shadow-2xl p-6 overflow-y-auto flex flex-col justify-between backdrop-blur-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-6">
-              <h3
-                className={`text-2xl ${isAr ? "font-arabic" : ""}`}
-                style={{ fontFamily: isAr ? undefined : "var(--font-display)", fontStyle: "italic" }}
-              >
-                {t.yourCart}
-              </h3>
-              <button onClick={() => setCartOpen(false)} className="text-foreground/50 hover:text-gold">✕</button>
-            </div>
-            <div className="space-y-4">
-              {Object.keys(cart).length === 0 && (
-                <p className="text-foreground/50 text-sm text-center py-10">{t.empty}</p>
-              )}
-              {items.filter((it) => cart[it.id]).map((it) => {
-                const name = isAr && it.nameAr ? it.nameAr : it.name;
-                return (
-                  <div key={it.id} className="flex items-center gap-3 glass rounded-xl p-3">
-                    {it.imageFileId ? (
-                      <img
-                        src={getDriveThumbnailUrl(it.imageFileId, 200)}
-                        alt=""
-                        className="w-14 h-14 rounded-lg object-cover"
-                        onError={(e) => handleImageError(e, it.imageFileId)}
-                      />
-                    ) : it.imageUrl ? (
-                      <img src={it.imageUrl} alt="" className="w-14 h-14 rounded-lg object-cover" />
-                    ) : (
-                      <img src={getPlaceholderImage()} alt="" className="w-14 h-14 rounded-lg object-cover opacity-50" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className={`truncate ${isAr ? "font-arabic" : ""}`}>{name}</p>
-                      <p className="text-xs text-gold font-mono">{(it.price * cart[it.id]).toLocaleString()} {t.iqd}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => remove(it.id)} className="w-7 h-7 rounded-full border border-white/15 hover:border-gold hover:text-gold">−</button>
-                      <span className="w-5 text-center text-sm">{cart[it.id]}</span>
-                      <button onClick={() => add(it.id)} className="w-7 h-7 rounded-full border border-white/15 hover:border-gold hover:text-gold">+</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {cartCount > 0 && (
-              <div className="mt-8 space-y-4">
-                <div className="hairline" />
-                <DiscountEncouragement tiers={discountTiers} quantity={cartCount} isAr={isAr} />
-                <div className="flex items-center justify-between">
-                  <span className="text-xs tracking-[0.3em] text-foreground/60">{t.subtotalLabel.toUpperCase()}</span>
-                  <span className="text-sm text-foreground/80 font-mono">{subtotal.toLocaleString()} {t.iqd}</span>
+            <div>
+              {/* Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-[#d4af37]/20 mb-6">
+                <div>
+                  <span className="text-[9px] tracking-[0.3em] text-[#d4af37] uppercase font-semibold block">
+                    ITALIAN PASTA
+                  </span>
+                  <h3
+                    className={`text-2xl text-[#fbf8f2] ${isAr ? "font-arabic font-bold" : ""}`}
+                    style={{ fontFamily: isAr ? undefined : "var(--font-display)" }}
+                  >
+                    {t.yourCart}
+                  </h3>
                 </div>
-                {discountPercent > 0 && (
-                  <div className="flex items-center justify-between text-gold">
-                    <span className="text-xs tracking-[0.3em]">{t.discountLabel.toUpperCase()} ({discountPercent}%)</span>
-                    <span className="text-sm font-mono">-{discountAmount.toLocaleString()} {t.iqd}</span>
-                  </div>
+                <button
+                  onClick={() => setCartOpen(false)}
+                  className="w-9 h-9 rounded-full border border-white/10 hover:border-[#d4af37] text-white/50 hover:text-[#d4af37] flex items-center justify-center transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Items List */}
+              <div className="space-y-3">
+                {Object.keys(cart).length === 0 && (
+                  <p className="text-[#bdae9c]/60 text-sm text-center py-12">{t.empty}</p>
                 )}
-                <div className="flex items-center justify-between">
-                  <span className="text-xs tracking-[0.3em] text-foreground/60">{t.total.toUpperCase()}</span>
-                  <span className="text-2xl text-gold font-mono">{totalAfterDiscount.toLocaleString()} {t.iqd}</span>
+
+                {items
+                  .filter((it) => cart[it.id])
+                  .map((it) => {
+                    const name = isAr && it.nameAr ? it.nameAr : it.name;
+                    return (
+                      <div
+                        key={it.id}
+                        className="flex items-center gap-3 bg-[#241a13]/80 border border-[#d4af37]/15 rounded-2xl p-3 shadow-sm"
+                      >
+                        {it.imageFileId ? (
+                          <img
+                            src={getDriveThumbnailUrl(it.imageFileId, 200)}
+                            alt=""
+                            className="w-14 h-14 rounded-xl object-cover"
+                            onError={(e) => handleImageError(e, it.imageFileId)}
+                          />
+                        ) : it.imageUrl ? (
+                          <img
+                            src={it.imageUrl}
+                            alt=""
+                            className="w-14 h-14 rounded-xl object-cover"
+                          />
+                        ) : (
+                          <img
+                            src={getPlaceholderImage()}
+                            alt=""
+                            className="w-14 h-14 rounded-xl object-cover opacity-50"
+                          />
+                        )}
+
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`truncate text-sm text-[#fbf8f2] font-medium ${
+                              isAr ? "font-arabic" : ""
+                            }`}
+                          >
+                            {name}
+                          </p>
+                          <p className="text-xs text-[#d4af37] font-mono font-semibold">
+                            {(it.price * cart[it.id]).toLocaleString()} {t.iqd}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => remove(it.id)}
+                            className="w-7 h-7 rounded-full border border-[#d4af37]/30 hover:border-[#d4af37] text-[#fbf8f2] hover:text-[#d4af37] flex items-center justify-center transition-colors"
+                          >
+                            −
+                          </button>
+                          <span className="w-5 text-center text-sm font-mono font-semibold">
+                            {cart[it.id]}
+                          </span>
+                          <button
+                            onClick={() => add(it.id)}
+                            className="w-7 h-7 rounded-full border border-[#d4af37]/30 hover:border-[#d4af37] text-[#fbf8f2] hover:text-[#d4af37] flex items-center justify-center transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* Cart Footer / Checkout Form */}
+            {cartCount > 0 && (
+              <div className="mt-8 space-y-4 pt-4 border-t border-[#d4af37]/20">
+                <DiscountEncouragement tiers={discountTiers} quantity={cartCount} isAr={isAr} />
+
+                <div className="space-y-1.5 text-xs text-[#bdae9c]">
+                  <div className="flex items-center justify-between">
+                    <span className="tracking-[0.2em] uppercase">{t.subtotalLabel}</span>
+                    <span className="text-[#fbf8f2] font-mono font-semibold">
+                      {subtotal.toLocaleString()} {t.iqd}
+                    </span>
+                  </div>
+
+                  {discountPercent > 0 && (
+                    <div className="flex items-center justify-between text-[#d4af37]">
+                      <span className="tracking-[0.2em] uppercase">
+                        {t.discountLabel} ({discountPercent}%)
+                      </span>
+                      <span className="font-mono font-semibold">
+                        -{discountAmount.toLocaleString()} {t.iqd}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-base pt-2 border-t border-white/5">
+                    <span className="tracking-[0.2em] uppercase text-[#fbf8f2] font-medium">
+                      {t.total}
+                    </span>
+                    <span className="text-2xl text-[#d4af37] font-mono font-bold">
+                      {totalAfterDiscount.toLocaleString()} {t.iqd}
+                    </span>
+                  </div>
                 </div>
-                <div className="space-y-3 pt-2">
+
+                {/* Form fields */}
+                <div className="space-y-2.5 pt-2">
                   <div>
                     <input
                       type="text"
                       placeholder={t.nameField}
                       value={custName}
-                      onChange={(e) => { setCustName(e.target.value); setFormErrors((p) => ({ ...p, name: false })); }}
-                      className={`w-full bg-white/5 border ${formErrors.name ? "border-red-500" : "border-white/10"} rounded-xl px-4 py-3 text-sm text-foreground placeholder-foreground/30 focus:outline-none focus:border-gold/50 transition`}
+                      onChange={(e) => {
+                        setCustName(e.target.value);
+                        setFormErrors((p) => ({ ...p, name: false }));
+                      }}
+                      className={`w-full bg-[#241a13] border ${
+                        formErrors.name ? "border-red-500" : "border-[#d4af37]/25"
+                      } rounded-xl px-4 py-2.5 text-sm text-[#fbf8f2] placeholder:text-[#bdae9c]/50 focus:outline-none focus:border-[#d4af37] transition`}
                     />
-                    {formErrors.name && <p className="text-red-400 text-[10px] mt-1">{t.requiredField}</p>}
+                    {formErrors.name && (
+                      <p className="text-red-400 text-[10px] mt-1">{t.requiredField}</p>
+                    )}
                   </div>
+
                   <div>
                     <input
                       type="tel"
                       placeholder={t.phoneField}
                       value={custPhone}
-                      onChange={(e) => { setCustPhone(e.target.value); setFormErrors((p) => ({ ...p, phone: false })); }}
-                      className={`w-full bg-white/5 border ${formErrors.phone ? "border-red-500" : "border-white/10"} rounded-xl px-4 py-3 text-sm text-foreground placeholder-foreground/30 focus:outline-none focus:border-gold/50 transition`}
+                      onChange={(e) => {
+                        setCustPhone(e.target.value);
+                        setFormErrors((p) => ({ ...p, phone: false }));
+                      }}
+                      className={`w-full bg-[#241a13] border ${
+                        formErrors.phone ? "border-red-500" : "border-[#d4af37]/25"
+                      } rounded-xl px-4 py-2.5 text-sm text-[#fbf8f2] placeholder:text-[#bdae9c]/50 focus:outline-none focus:border-[#d4af37] transition`}
                     />
-                    {formErrors.phone && <p className="text-red-400 text-[10px] mt-1">{t.requiredField}</p>}
+                    {formErrors.phone && (
+                      <p className="text-red-400 text-[10px] mt-1">{t.requiredField}</p>
+                    )}
                   </div>
+
                   <div>
                     <input
                       type="text"
                       placeholder={t.addressField}
                       value={custAddress}
-                      onChange={(e) => { setCustAddress(e.target.value); setFormErrors((p) => ({ ...p, address: false })); }}
-                      className={`w-full bg-white/5 border ${formErrors.address ? "border-red-500" : "border-white/10"} rounded-xl px-4 py-3 text-sm text-foreground placeholder-foreground/30 focus:outline-none focus:border-gold/50 transition`}
+                      onChange={(e) => {
+                        setCustAddress(e.target.value);
+                        setFormErrors((p) => ({ ...p, address: false }));
+                      }}
+                      className={`w-full bg-[#241a13] border ${
+                        formErrors.address ? "border-red-500" : "border-[#d4af37]/25"
+                      } rounded-xl px-4 py-2.5 text-sm text-[#fbf8f2] placeholder:text-[#bdae9c]/50 focus:outline-none focus:border-[#d4af37] transition`}
                     />
-                    {formErrors.address && <p className="text-red-400 text-[10px] mt-1">{t.requiredField}</p>}
+                    {formErrors.address && (
+                      <p className="text-red-400 text-[10px] mt-1">{t.requiredField}</p>
+                    )}
                   </div>
+
                   <div>
                     <input
                       type="time"
                       value={custPickupTime}
-                      onChange={(e) => { setCustPickupTime(e.target.value); setFormErrors((p) => ({ ...p, pickupTime: false })); }}
-                      className={`w-full bg-white/5 border ${formErrors.pickupTime ? "border-red-500" : "border-white/10"} rounded-xl px-4 py-3 text-sm text-foreground placeholder-foreground/30 focus:outline-none focus:border-gold/50 transition ${isAr ? "direction-rtl" : ""}`}
+                      onChange={(e) => {
+                        setCustPickupTime(e.target.value);
+                        setFormErrors((p) => ({ ...p, pickupTime: false }));
+                      }}
+                      className={`w-full bg-[#241a13] border ${
+                        formErrors.pickupTime ? "border-red-500" : "border-[#d4af37]/25"
+                      } rounded-xl px-4 py-2.5 text-sm text-[#fbf8f2] placeholder:text-[#bdae9c]/50 focus:outline-none focus:border-[#d4af37] transition ${
+                        isAr ? "direction-rtl" : ""
+                      }`}
                     />
-                    {!custPickupTime && <p className="text-foreground/30 text-[10px] mt-1">{t.pickupTimeField}</p>}
-                    {formErrors.pickupTime && <p className="text-red-400 text-[10px] mt-1">{t.requiredField}</p>}
+                    {!custPickupTime && (
+                      <p className="text-[#bdae9c]/50 text-[10px] mt-1">{t.pickupTimeField}</p>
+                    )}
+                    {formErrors.pickupTime && (
+                      <p className="text-red-400 text-[10px] mt-1">{t.requiredField}</p>
+                    )}
                   </div>
                 </div>
+
                 <button
                   onClick={sendOrderWhatsApp}
-                  className={`w-full rounded-full bg-gold text-primary-foreground py-3.5 text-[11px] tracking-[0.35em] hover:bg-gold-soft transition ${isAr ? "font-arabic tracking-normal" : "uppercase"}`}
+                  className={`w-full rounded-full bg-[#d4af37] text-[#120c08] py-3.5 text-xs tracking-[0.25em] font-semibold hover:bg-[#e5c158] transition-all duration-300 shadow-[0_6px_25px_-5px_rgba(212,175,55,0.45)] ${
+                    isAr ? "font-arabic tracking-normal text-sm" : "uppercase"
+                  }`}
                 >
                   {t.checkout}
                 </button>
@@ -473,6 +755,7 @@ export default function App() {
         </div>
       )}
 
+      {/* ============ LIGHTBOX MODAL ============ */}
       {lightboxItem && (
         <MenuLightbox
           item={lightboxItem}
