@@ -40,8 +40,11 @@ function parseSheetRow(row: SheetRow, index: number): MenuItem {
   const rawImageUrl = (row["ImageUrl"] || row["ImageURL"] || row["image_url"] || "").trim();
   const rawFileId   = (row["ImageID"]  || row["ImageFileId"] || row["image_id"] || "").trim();
 
-  // Decide image source: if rawImageUrl starts with http use directly, else treat as Drive ID
-  const isDirectUrl  = rawImageUrl.startsWith("http");
+  // Decide image source:
+  //  - starts with "http" → external URL (Unsplash, CDN, GitHub raw, etc.)
+  //  - starts with "/"    → relative path served from the site root (e.g. /dishes/x.jpg)
+  //  - anything else     → treat as Google Drive file ID
+  const isDirectUrl  = rawImageUrl.startsWith("http") || rawImageUrl.startsWith("/");
   const imageFileId  = isDirectUrl ? rawFileId : (rawImageUrl || rawFileId);
   const imageUrl     = isDirectUrl ? rawImageUrl : (imageFileId ? buildDriveUrl(imageFileId) : "");
 
