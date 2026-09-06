@@ -40,13 +40,28 @@ function parseSheetRow(row: SheetRow, index: number): MenuItem {
   const rawImageUrl = (row["ImageUrl"] || row["ImageURL"] || row["image_url"] || "").trim();
   const rawFileId   = (row["ImageID"]  || row["ImageFileId"] || row["image_id"] || "").trim();
 
-  // Decide image source:
-  //  - starts with "http" → external URL (Unsplash, CDN, GitHub raw, etc.)
-  //  - starts with "/"    → relative path served from the site root (e.g. /dishes/x.jpg)
-  //  - anything else     → treat as Google Drive file ID
-  const isDirectUrl  = rawImageUrl.startsWith("http") || rawImageUrl.startsWith("/");
-  const imageFileId  = isDirectUrl ? rawFileId : (rawImageUrl || rawFileId);
-  const imageUrl     = isDirectUrl ? rawImageUrl : (imageFileId ? buildDriveUrl(imageFileId) : "");
+  // Priority order for image resolution:
+  //  1. ImageUrl column — if it looks like a URL or relative path, use directly
+  //  2. ImageID column  — if it looks like a URL or relative path, use directly
+  //  3. ImageID column  — otherwise treat as a Google Drive file ID
+  const looksLikeUrl = (s: string) => s.startsWith("http") || s.startsWith("/");
+
+  let imageFileId = "";
+  let imageUrl    = "";
+
+  if (looksLikeUrl(rawImageUrl)) {
+    // ImageUrl column has a direct link
+    imageUrl    = rawImageUrl;
+    imageFileId = rawFileId && !looksLikeUrl(rawFileId) ? rawFileId : "";
+  } else if (looksLikeUrl(rawFileId)) {
+    // ImageID column contains a direct URL instead of a Drive ID
+    imageUrl    = rawFileId;
+    imageFileId = "";
+  } else {
+    // Treat ImageID as a Google Drive file ID
+    imageFileId = rawFileId || rawImageUrl;
+    imageUrl    = imageFileId ? buildDriveUrl(imageFileId) : "";
+  }
 
   const smallPrice = row["Small_Price"] ? Number(row["Small_Price"]) : null;
   const largePrice = row["Large_Price"] ? Number(row["Large_Price"]) : null;
