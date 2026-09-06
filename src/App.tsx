@@ -17,19 +17,32 @@ import { DiscountEncouragement } from "@/components/DiscountEncouragement";
 
 gsap.registerPlugin(ScrollTrigger);
 
-function LoadingScreen({ ready, progress }: { ready: boolean; progress: number }) {
+function LoadingScreen({ ready }: { ready: boolean }) {
   const [show, setShow] = useState(true);
   const [fading, setFading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
+  // Animate progress: tick toward 85% while loading, jump to 100 when ready
   useEffect(() => {
     if (ready) {
-      setFading(true);
-      const t = setTimeout(() => setShow(false), 700);
-      return () => clearTimeout(t);
+      setProgress(100);
+      const t1 = setTimeout(() => setFading(true), 200);
+      const t2 = setTimeout(() => setShow(false), 900);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
     }
+    // Increment progress smoothly toward 85%
+    const interval = setInterval(() => {
+      setProgress((p) => {
+        if (p >= 85) { clearInterval(interval); return p; }
+        return p + Math.random() * 4 + 1;
+      });
+    }, 120);
+    return () => clearInterval(interval);
   }, [ready]);
 
   if (!show) return null;
+
+  const displayProgress = Math.min(100, Math.round(progress));
 
   return (
     <div
@@ -48,10 +61,10 @@ function LoadingScreen({ ready, progress }: { ready: boolean; progress: number }
       <div className="w-44 h-[2px] bg-[#2a2018] rounded-full overflow-hidden mb-3">
         <div
           className="h-full bg-[#d4af37] rounded-full transition-all duration-300"
-          style={{ width: `${progress}%` }}
+          style={{ width: `${displayProgress}%` }}
         />
       </div>
-      <span className="text-[11px] tracking-[0.3em] text-[#bdae9c]/60 font-mono">{progress}%</span>
+      <span className="text-[11px] tracking-[0.3em] text-[#bdae9c]/60 font-mono">{displayProgress}%</span>
     </div>
   );
 }
@@ -136,6 +149,7 @@ export default function App() {
   const { search, setSearch, activeCategory, setActiveCategory, filtered } = useMenuFilter(items);
 
   // Cart & State — variant-aware: key = itemId or itemId__variantName
+  const [cartClosing, setCartClosing] = useState(false);
   const [cart, setCart] = useState<Cart>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [lightboxItem, setLightboxItem] = useState<MenuItem | null>(null);
@@ -250,7 +264,7 @@ export default function App() {
       dir={isAr ? "rtl" : "ltr"}
       lang={isAr ? "ar" : "en"}
     >
-      <LoadingScreen ready={!loading} progress={loading ? 40 : 100} />
+      <LoadingScreen ready={!loading} />
 
       {/* Decorative Italian Ingredients Layer (basil, tomato, wheat, parmesan, olive oil) */}
       <ItalianDecorations />
@@ -506,7 +520,7 @@ export default function App() {
         )}
         <button
           onClick={() => setCartOpen(true)}
-          className="w-14 h-14 rounded-full bg-[#1c1510] text-[#d4af37] border border-[#d4af37]/50 grid place-items-center hover:scale-108 transition-all duration-300 shadow-[0_12px_35px_rgba(0,0,0,0.8),0_0_20px_rgba(212,175,55,0.25)] hover:bg-[#d4af37] hover:text-[#120c08]"
+          className="relative w-14 h-14 rounded-full bg-[#1c1510] text-[#d4af37] border border-[#d4af37]/50 grid place-items-center hover:scale-108 transition-all duration-300 shadow-[0_12px_35px_rgba(0,0,0,0.8),0_0_20px_rgba(212,175,55,0.25)] hover:bg-[#d4af37] hover:text-[#120c08]"
           aria-label="Open order"
         >
           <svg
@@ -532,11 +546,20 @@ export default function App() {
       </div>
 
       {/* ============ CART / ORDER DRAWER ============ */}
-      {cartOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setCartOpen(false)}>
-          <div className="absolute inset-0 bg-black/75 backdrop-blur-md transition-opacity duration-300" />
+      {(cartOpen || cartClosing) && (
+        <div
+          className="fixed inset-0 z-50 flex justify-end"
+          onClick={() => {
+            setCartClosing(true);
+            setTimeout(() => { setCartOpen(false); setCartClosing(false); }, 380);
+          }}
+        >
+          <div
+            className="absolute inset-0 bg-black/75 backdrop-blur-md transition-opacity duration-300"
+            style={{ opacity: cartClosing ? 0 : 1 }}
+          />
           <aside
-            className="drawer-slide relative w-full max-w-md bg-[#18110b]/98 border-l border-[#d4af37]/25 h-full shadow-2xl p-6 overflow-y-auto flex flex-col justify-between backdrop-blur-xl"
+            className={`${cartClosing ? 'drawer-close' : 'drawer-slide'} relative w-full max-w-md bg-[#18110b]/98 border-l border-[#d4af37]/25 h-full shadow-2xl p-6 overflow-y-auto flex flex-col justify-between backdrop-blur-xl`}
             onClick={(e) => e.stopPropagation()}
           >
             <div>
@@ -554,7 +577,10 @@ export default function App() {
                   </h3>
                 </div>
                 <button
-                  onClick={() => setCartOpen(false)}
+                  onClick={() => {
+                    setCartClosing(true);
+                    setTimeout(() => { setCartOpen(false); setCartClosing(false); }, 380);
+                  }}
                   className="w-9 h-9 rounded-full border border-white/10 hover:border-[#d4af37] text-white/50 hover:text-[#d4af37] flex items-center justify-center transition-colors"
                 >
                   ✕
@@ -610,7 +636,15 @@ export default function App() {
                             {entry.qty}
                           </span>
                           <button
-                            onClick={() => baseItem && add(baseItem, undefined)}
+                            onClick={() => {
+                              if (!baseItem) return;
+                              // Re-add with correct variant (parsed from the cart key)
+                              const variantName = key.includes('__') ? key.split('__')[1] : undefined;
+                              const variant = variantName
+                                ? baseItem.variants?.find((v) => v.name.toLowerCase() === variantName)
+                                : undefined;
+                              add(baseItem, variant);
+                            }}
                             className="w-7 h-7 rounded-full border border-[#d4af37]/30 hover:border-[#d4af37] text-[#fbf8f2] hover:text-[#d4af37] flex items-center justify-center transition-colors"
                           >
                             +

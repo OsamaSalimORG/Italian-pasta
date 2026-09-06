@@ -183,6 +183,12 @@
 }
 .drawer-slide { animation: drawerSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
+@keyframes drawerClose {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+.drawer-close { animation: drawerClose 0.35s cubic-bezier(0.4, 0, 1, 1) both; }
+
 /* Discount tier glow styling tailored to antique Italian gold and terracotta */
 .discount-glow {
   position: relative;
