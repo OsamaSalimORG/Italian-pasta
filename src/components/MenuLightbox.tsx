@@ -1,12 +1,12 @@
-import { useEffect, useCallback } from "react";
-import type { MenuItem } from "@/types/menu";
+import { useState, useEffect, useCallback } from "react";
+import type { MenuItem, MenuItemVariant } from "@/types/menu";
 import { getDriveImageUrl, getPlaceholderImage, handleImageError } from "@/services/google-drive";
 
 interface MenuLightboxProps {
   item: MenuItem;
   isAr: boolean;
   onClose: () => void;
-  onAddToCart: (id: string) => void;
+  onAddToCart: (item: MenuItem, variant?: MenuItemVariant) => void;
   iqdLabel: string;
   addToCartLabel: string;
 }
@@ -22,6 +22,9 @@ export function MenuLightbox({
   const name = isAr && item.nameAr ? item.nameAr : item.name;
   const desc = isAr && item.descriptionAr ? item.descriptionAr : item.description;
   const category = isAr && item.categoryAr ? item.categoryAr : item.category;
+  const hasVariants = item.variants && item.variants.length > 0;
+
+  const [addedKey, setAddedKey] = useState<string | null>(null);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -38,6 +41,24 @@ export function MenuLightbox({
       document.body.style.overflow = "";
     };
   }, [handleKeyDown]);
+
+  function flash(key: string) {
+    setAddedKey(key);
+    setTimeout(() => setAddedKey(null), 1200);
+  }
+
+  function handleVariantAdd(v: MenuItemVariant) {
+    if (!item.available) return;
+    onAddToCart(item, v);
+    flash(v.name);
+  }
+
+  function handleSimpleAdd() {
+    if (!item.available) return;
+    onAddToCart(item);
+    flash("simple");
+    onClose();
+  }
 
   const fullSrc = item.imageUrl || (item.imageFileId ? getDriveImageUrl(item.imageFileId) : getPlaceholderImage());
 
@@ -60,16 +81,7 @@ export function MenuLightbox({
           aria-label="Close dialog"
           className="absolute top-4 right-4 z-30 w-10 h-10 rounded-full border border-white/20 bg-[#120c08]/80 backdrop-blur-md flex items-center justify-center text-white/70 hover:text-[#d4af37] hover:border-[#d4af37]/60 transition-all duration-300"
         >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 6 6 18" />
             <path d="m6 6 12 12" />
           </svg>
@@ -108,44 +120,47 @@ export function MenuLightbox({
                 {category}
               </p>
               <h2
-                className={`text-2xl md:text-3xl lg:text-4xl text-[#fbf8f2] ${
-                  isAr ? "font-arabic font-bold" : ""
-                }`}
+                className={`text-2xl md:text-3xl lg:text-4xl text-[#fbf8f2] ${isAr ? "font-arabic font-bold" : ""}`}
                 style={{ fontFamily: isAr ? undefined : "var(--font-display)" }}
               >
                 {name}
               </h2>
             </div>
 
-            <div className="text-right whitespace-nowrap">
-              {item.oldPrice && item.discount ? (
-                <div className="flex flex-col items-end">
-                  <span className="text-xs text-[#8c7b6d] line-through font-mono">
-                    {item.oldPrice.toLocaleString()}
-                  </span>
+            {/* Price area — show range for variants, single price otherwise */}
+            {hasVariants ? (
+              <div className="text-right whitespace-nowrap">
+                <span className="text-[10px] tracking-[0.2em] text-[#bdae9c] uppercase block mb-0.5">
+                  {isAr ? "من" : "FROM"}
+                </span>
+                <span className="text-[#d4af37] text-2xl font-bold font-mono">
+                  {item.variants![0].price.toLocaleString()}{" "}
+                  <span className="text-xs font-sans font-normal text-[#d4af37]/80">{iqdLabel}</span>
+                </span>
+              </div>
+            ) : (
+              <div className="text-right whitespace-nowrap">
+                {item.oldPrice && item.discount ? (
+                  <div className="flex flex-col items-end">
+                    <span className="text-xs text-[#8c7b6d] line-through font-mono">
+                      {item.oldPrice.toLocaleString()}
+                    </span>
+                    <span className="text-[#d4af37] text-2xl font-bold font-mono">
+                      {item.price.toLocaleString()}{" "}
+                      <span className="text-xs font-sans font-normal text-[#d4af37]/80">{iqdLabel}</span>
+                    </span>
+                  </div>
+                ) : (
                   <span className="text-[#d4af37] text-2xl font-bold font-mono">
                     {item.price.toLocaleString()}{" "}
-                    <span className="text-xs font-sans font-normal text-[#d4af37]/80">
-                      {iqdLabel}
-                    </span>
+                    <span className="text-xs font-sans font-normal text-[#d4af37]/80">{iqdLabel}</span>
                   </span>
-                </div>
-              ) : (
-                <span className="text-[#d4af37] text-2xl font-bold font-mono">
-                  {item.price.toLocaleString()}{" "}
-                  <span className="text-xs font-sans font-normal text-[#d4af37]/80">
-                    {iqdLabel}
-                  </span>
-                </span>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <p
-            className={`text-sm md:text-base text-[#c7baa8] leading-relaxed mb-6 ${
-              isAr ? "font-arabic" : ""
-            }`}
-          >
+          <p className={`text-sm md:text-base text-[#c7baa8] leading-relaxed mb-6 ${isAr ? "font-arabic" : ""}`}>
             {desc}
           </p>
 
@@ -177,7 +192,7 @@ export function MenuLightbox({
             </div>
           </div>
 
-          {/* Ingredients list if available */}
+          {/* Ingredients list */}
           {item.ingredients && (
             <div className="mb-4">
               <span className="text-[10px] tracking-[0.25em] text-[#d4af37] uppercase font-medium block mb-1">
@@ -197,21 +212,56 @@ export function MenuLightbox({
             </div>
           )}
 
-          {/* Add to Order CTA */}
-          <button
-            onClick={() => {
-              if (item.available) {
-                onAddToCart(item.id);
-                onClose();
-              }
-            }}
-            disabled={!item.available}
-            className={`w-full rounded-full bg-[#d4af37] text-[#120c08] hover:bg-[#e5c158] py-3.5 text-xs tracking-[0.25em] font-semibold transition-all duration-300 shadow-[0_6px_24px_-6px_rgba(212,175,55,0.45)] active:scale-98 disabled:opacity-30 disabled:cursor-not-allowed ${
-              isAr ? "font-arabic tracking-normal text-sm" : "uppercase"
-            }`}
-          >
-            + {addToCartLabel}
-          </button>
+          {/* ── CTA: Size selector for pasta, single button for others ── */}
+          {hasVariants ? (
+            <div>
+              <p className="text-[10px] tracking-[0.3em] text-[#bdae9c] uppercase mb-3">
+                {isAr ? "اختر الحجم" : "CHOOSE SIZE"}
+              </p>
+              <div className={`flex gap-3 ${isAr ? "flex-row-reverse" : ""}`}>
+                {item.variants!.map((v) => {
+                  const isAdded = addedKey === v.name;
+                  return (
+                    <button
+                      key={v.name}
+                      onClick={() => handleVariantAdd(v)}
+                      disabled={!item.available}
+                      className={`flex-1 rounded-2xl border py-4 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 shadow-sm ${
+                        isAdded
+                          ? "border-[#d4af37] bg-[#d4af37] text-[#120c08]"
+                          : "border-[#d4af37]/50 bg-[#d4af37]/10 hover:bg-[#d4af37] hover:text-[#120c08] hover:border-[#d4af37] text-[#fbf8f2]"
+                      }`}
+                    >
+                      <span className={`block text-[11px] tracking-[0.2em] uppercase font-semibold mb-1 ${isAr ? "font-arabic tracking-normal" : ""}`}>
+                        {isAdded ? (isAr ? "✓ أُضيف!" : "✓ Added!") : (isAr ? v.nameAr : v.name)}
+                      </span>
+                      <span className="block text-lg font-bold font-mono">
+                        {v.price.toLocaleString()}
+                        <span className="text-[10px] font-sans font-normal ml-1 opacity-80">{iqdLabel}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {addedKey && (
+                <p className="text-center text-[11px] text-[#d4af37] mt-3 tracking-[0.2em]">
+                  {isAr ? "تمت الإضافة إلى طلبك ✓" : "Added to your order ✓"}
+                </p>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={handleSimpleAdd}
+              disabled={!item.available}
+              className={`w-full rounded-full py-3.5 text-xs tracking-[0.25em] font-semibold transition-all duration-300 shadow-[0_6px_24px_-6px_rgba(212,175,55,0.45)] active:scale-98 disabled:opacity-30 disabled:cursor-not-allowed ${
+                addedKey === "simple"
+                  ? "bg-[#e5c158] text-[#120c08]"
+                  : "bg-[#d4af37] text-[#120c08] hover:bg-[#e5c158]"
+              } ${isAr ? "font-arabic tracking-normal text-sm" : "uppercase"}`}
+            >
+              {addedKey === "simple" ? (isAr ? "✓ تمت الإضافة!" : "✓ Added!") : `+ ${addToCartLabel}`}
+            </button>
+          )}
         </div>
       </div>
     </div>

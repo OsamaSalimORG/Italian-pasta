@@ -12,7 +12,7 @@ import { Sparticles } from "@/components/Sparticles";
 import { ItalianDecorations } from "@/components/ItalianDecorations";
 import { getDriveThumbnailUrl, getPlaceholderImage, handleImageError } from "@/services/google-drive";
 import { getDiscountState } from "@/services/google-sheets";
-import type { MenuItem } from "@/types/menu";
+import type { MenuItem, MenuItemVariant, Cart } from "@/types/menu";
 import { DiscountEncouragement } from "@/components/DiscountEncouragement";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -135,8 +135,8 @@ export default function App() {
   const { items, loading, error, categories, discountTiers, whatsappPhone } = useMenuData();
   const { search, setSearch, activeCategory, setActiveCategory, filtered } = useMenuFilter(items);
 
-  // Cart & State
-  const [cart, setCart] = useState<Record<string, number>>({});
+  // Cart & State — variant-aware: key = itemId or itemId__variantName
+  const [cart, setCart] = useState<Cart>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [lightboxItem, setLightboxItem] = useState<MenuItem | null>(null);
   const [custName, setCustName] = useState("");
@@ -150,23 +150,39 @@ export default function App() {
     pickupTime?: boolean;
   }>({});
 
-  const cartCount = Object.values(cart).reduce((a, b) => a + b, 0);
-  const subtotal = items.reduce((sum, it) => sum + (cart[it.id] || 0) * it.price, 0);
+  const cartCount = Object.values(cart).reduce((sum, e) => sum + e.qty, 0);
+  const subtotal = Object.values(cart).reduce((sum, e) => sum + e.qty * e.price, 0);
   const discountState = getDiscountState(discountTiers, cartCount);
   const discountPercent = discountState?.currentPercent ?? 0;
   const discountAmount = Math.round((subtotal * discountPercent) / 100);
   const totalAfterDiscount = subtotal - discountAmount;
 
-  const add = useCallback((id: string) => setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 })), []);
-  const remove = useCallback(
-    (id: string) =>
-      setCart((c) => {
-        const n = (c[id] || 0) - 1;
-        const { [id]: _drop, ...rest } = c;
-        return n <= 0 ? rest : { ...c, [id]: n };
-      }),
-    []
-  );
+  /** Add an item (with optional size variant) to the cart */
+  const add = useCallback((item: MenuItem, variant?: MenuItemVariant) => {
+    const key = variant ? `${item.id}__${variant.name.toLowerCase()}` : item.id;
+    const price = variant ? variant.price : item.price;
+    const nameLabel = variant ? `${item.name} (${variant.name})` : item.name;
+    const nameLabelAr = variant
+      ? `${item.nameAr ?? item.name} (${variant.nameAr})`
+      : (item.nameAr ?? item.name);
+    setCart((c) => ({
+      ...c,
+      [key]: { qty: (c[key]?.qty ?? 0) + 1, price, itemId: item.id, nameLabel, nameLabelAr },
+    }));
+  }, []);
+
+  /** Decrease qty or remove a cart entry by its full key */
+  const remove = useCallback((key: string) => {
+    setCart((c) => {
+      const cur = c[key];
+      if (!cur) return c;
+      if (cur.qty <= 1) {
+        const { [key]: _drop, ...rest } = c;
+        return rest;
+      }
+      return { ...c, [key]: { ...cur, qty: cur.qty - 1 } };
+    });
+  }, []);
 
   const sendOrderWhatsApp = useCallback(() => {
     const errors: { name?: boolean; phone?: boolean; address?: boolean; pickupTime?: boolean } = {};
@@ -180,15 +196,13 @@ export default function App() {
     }
     setFormErrors({});
 
-    const orderLines = items
-      .filter((it) => cart[it.id])
-      .map((it) => {
-        const name = isAr && it.nameAr ? it.nameAr : it.name;
-        return `• ${name} x${cart[it.id]} — ${(it.price * cart[it.id]).toLocaleString()} IQD`;
+    const orderLines = Object.entries(cart)
+      .filter(([, entry]) => entry.qty > 0)
+      .map(([, entry]) => {
+        const name = isAr ? entry.nameLabelAr : entry.nameLabel;
+        return `• ${name} x${entry.qty} — ${(entry.price * entry.qty).toLocaleString()} IQD`;
       });
 
-    const subtotalAmount = subtotal.toLocaleString();
-    const totalAmount = totalAfterDiscount.toLocaleString();
     const msg = [
       `🍝 *Italian Pasta Restaurant — Order*`,
       ``,
@@ -201,11 +215,11 @@ export default function App() {
       ...orderLines,
       ``,
       `-----------------`,
-      `💵 *Subtotal:* ${subtotalAmount} IQD`,
+      `💵 *Subtotal:* ${subtotal.toLocaleString()} IQD`,
       ...(discountPercent > 0
         ? [`🎉 *Discount (${discountPercent}%):* -${discountAmount.toLocaleString()} IQD`]
         : []),
-      `💰 *Total Amount:* ${totalAmount} IQD`,
+      `💰 *Total Amount:* ${totalAfterDiscount.toLocaleString()} IQD`,
       ``,
       `Grazie mille! 🇮🇹`,
     ].join("\n");
@@ -214,7 +228,7 @@ export default function App() {
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
   }, [
-    cart, items, custName, custPhone, custAddress, custPickupTime,
+    cart, custName, custPhone, custAddress, custPickupTime,
     subtotal, totalAfterDiscount, discountPercent, discountAmount, isAr, whatsappPhone,
   ]);
 
@@ -547,67 +561,56 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Items List */}
+              {/* Items List — variant-aware */}
               <div className="space-y-3">
                 {Object.keys(cart).length === 0 && (
                   <p className="text-[#bdae9c]/60 text-sm text-center py-12">{t.empty}</p>
                 )}
 
-                {items
-                  .filter((it) => cart[it.id])
-                  .map((it) => {
-                    const name = isAr && it.nameAr ? it.nameAr : it.name;
+                {Object.entries(cart)
+                  .filter(([, entry]) => entry.qty > 0)
+                  .map(([key, entry]) => {
+                    const baseItem = items.find((i) => i.id === entry.itemId);
+                    const label = isAr ? entry.nameLabelAr : entry.nameLabel;
+                    const imgSrc = baseItem?.imageFileId
+                      ? getDriveThumbnailUrl(baseItem.imageFileId, 200)
+                      : (baseItem?.imageUrl || getPlaceholderImage());
                     return (
                       <div
-                        key={it.id}
+                        key={key}
                         className="flex items-center gap-3 bg-[#241a13]/80 border border-[#d4af37]/15 rounded-2xl p-3 shadow-sm"
                       >
-                        {it.imageFileId ? (
-                          <img
-                            src={getDriveThumbnailUrl(it.imageFileId, 200)}
-                            alt=""
-                            className="w-14 h-14 rounded-xl object-cover"
-                            onError={(e) => handleImageError(e, it.imageFileId)}
-                          />
-                        ) : it.imageUrl ? (
-                          <img
-                            src={it.imageUrl}
-                            alt=""
-                            className="w-14 h-14 rounded-xl object-cover"
-                          />
-                        ) : (
-                          <img
-                            src={getPlaceholderImage()}
-                            alt=""
-                            className="w-14 h-14 rounded-xl object-cover opacity-50"
-                          />
-                        )}
+                        <img
+                          src={imgSrc}
+                          alt=""
+                          className="w-14 h-14 rounded-xl object-cover"
+                          onError={(e) => {
+                            if (baseItem?.imageFileId) handleImageError(e, baseItem.imageFileId);
+                            else (e.currentTarget as HTMLImageElement).src = getPlaceholderImage();
+                          }}
+                        />
 
                         <div className="flex-1 min-w-0">
-                          <p
-                            className={`truncate text-sm text-[#fbf8f2] font-medium ${
-                              isAr ? "font-arabic" : ""
-                            }`}
-                          >
-                            {name}
+                          <p className={`truncate text-sm text-[#fbf8f2] font-medium ${isAr ? "font-arabic" : ""}`}>
+                            {label}
                           </p>
                           <p className="text-xs text-[#d4af37] font-mono font-semibold">
-                            {(it.price * cart[it.id]).toLocaleString()} {t.iqd}
+                            {(entry.price * entry.qty).toLocaleString()} {t.iqd}
                           </p>
                         </div>
 
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => remove(it.id)}
+                            onClick={() => remove(key)}
                             className="w-7 h-7 rounded-full border border-[#d4af37]/30 hover:border-[#d4af37] text-[#fbf8f2] hover:text-[#d4af37] flex items-center justify-center transition-colors"
                           >
                             −
                           </button>
                           <span className="w-5 text-center text-sm font-mono font-semibold">
-                            {cart[it.id]}
+                            {entry.qty}
                           </span>
                           <button
-                            onClick={() => add(it.id)}
+                            onClick={() => baseItem && add(baseItem, undefined)}
                             className="w-7 h-7 rounded-full border border-[#d4af37]/30 hover:border-[#d4af37] text-[#fbf8f2] hover:text-[#d4af37] flex items-center justify-center transition-colors"
                           >
                             +
@@ -752,7 +755,7 @@ export default function App() {
           item={lightboxItem}
           isAr={isAr}
           onClose={() => setLightboxItem(null)}
-          onAddToCart={add}
+          onAddToCart={(item, variant) => add(item, variant)}
           iqdLabel={t.iqd}
           addToCartLabel={t.addToCart}
         />

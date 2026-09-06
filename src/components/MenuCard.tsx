@@ -1,10 +1,11 @@
-import type { MenuItem } from "@/types/menu";
+import { useState } from "react";
+import type { MenuItem, MenuItemVariant } from "@/types/menu";
 import { handleImageError, getPlaceholderImage, getDriveThumbnailUrl } from "@/services/google-drive";
 
 interface MenuCardProps {
   item: MenuItem;
   isAr: boolean;
-  onAddToCart: (id: string) => void;
+  onAddToCart: (item: MenuItem, variant?: MenuItemVariant) => void;
   onImageClick: (item: MenuItem) => void;
   iqdLabel: string;
   addToCartLabel: string;
@@ -21,10 +22,31 @@ export function MenuCard({
   const name = isAr && item.nameAr ? item.nameAr : item.name;
   const desc = isAr && item.descriptionAr ? item.descriptionAr : item.description;
   const category = isAr && item.categoryAr ? item.categoryAr : item.category;
+  const hasVariants = item.variants && item.variants.length > 0;
+
+  const [addedKey, setAddedKey] = useState<string | null>(null);
 
   const imgSrc = item.imageFileId
     ? getDriveThumbnailUrl(item.imageFileId, 600)
     : item.imageUrl || getPlaceholderImage();
+
+  /** Flash a quick "added!" indicator */
+  function flashAdded(key: string) {
+    setAddedKey(key);
+    setTimeout(() => setAddedKey(null), 1200);
+  }
+
+  function handleVariantAdd(variant: MenuItemVariant) {
+    if (!item.available) return;
+    onAddToCart(item, variant);
+    flashAdded(variant.name);
+  }
+
+  function handleSimpleAdd() {
+    if (!item.available) return;
+    onAddToCart(item);
+    flashAdded("simple");
+  }
 
   return (
     <article
@@ -66,23 +88,14 @@ export function MenuCard({
         {/* Quick View Hover Hint Icon */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
           <div className="w-11 h-11 rounded-full bg-[#120c08]/80 backdrop-blur-md border border-[#d4af37]/60 flex items-center justify-center text-[#d4af37] shadow-lg transform scale-90 group-hover:scale-100 transition-transform duration-300">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8" />
               <path d="m21 21-4.35-4.35" />
             </svg>
           </div>
         </div>
 
-        {/* Unavailable overlay if out of stock */}
+        {/* Unavailable overlay */}
         {!item.available && (
           <div className="absolute inset-0 bg-black/75 backdrop-blur-xs grid place-items-center z-20">
             <span className="text-[11px] tracking-[0.25em] text-[#eedfc8]/80 uppercase font-medium">
@@ -122,78 +135,101 @@ export function MenuCard({
           </h3>
 
           {/* Description */}
-          <p
-            className={`text-xs sm:text-[13px] text-[#c7baa8] leading-relaxed line-clamp-2 sm:line-clamp-3 mb-4 ${
-              isAr ? "font-arabic" : ""
-            }`}
-          >
+          <p className={`text-xs sm:text-[13px] text-[#c7baa8] leading-relaxed line-clamp-2 sm:line-clamp-3 mb-4 ${isAr ? "font-arabic" : ""}`}>
             {desc}
           </p>
         </div>
 
         {/* Pricing & CTA Row */}
         <div>
-          {/* Price */}
-          <div className="flex items-baseline justify-between pt-3 border-t border-[#d4af37]/15 mb-4">
-            <span className="text-[10px] tracking-[0.2em] text-[#bdae9c] uppercase">
-              {isAr ? "السعر" : "PRICE"}
-            </span>
-            <div className="text-right">
-              {item.oldPrice && item.discount ? (
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-[#8c7b6d] line-through font-mono">
-                    {item.oldPrice.toLocaleString()}
-                  </span>
-                  <span className="text-[#d4af37] text-lg font-bold font-mono tracking-tight">
-                    {item.price.toLocaleString()}{" "}
-                    <span className="text-[10px] font-sans font-normal text-[#d4af37]/80">
-                      {iqdLabel}
-                    </span>
-                  </span>
-                </div>
-              ) : (
-                <span className="text-[#d4af37] text-lg font-bold font-mono tracking-tight">
-                  {item.price.toLocaleString()}{" "}
-                  <span className="text-[10px] font-sans font-normal text-[#d4af37]/80">
-                    {iqdLabel}
-                  </span>
+          {/* ── Variant (Small / Large) size selector ── */}
+          {hasVariants ? (
+            <div>
+              <div className="flex items-center justify-between pt-3 border-t border-[#d4af37]/15 mb-3">
+                <span className="text-[10px] tracking-[0.2em] text-[#bdae9c] uppercase">
+                  {isAr ? "اختر الحجم" : "CHOOSE SIZE"}
                 </span>
-              )}
+              </div>
+              <div className={`flex gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
+                {item.variants!.map((v) => {
+                  const isAdded = addedKey === v.name;
+                  return (
+                    <button
+                      key={v.name}
+                      onClick={() => handleVariantAdd(v)}
+                      disabled={!item.available}
+                      className={`flex-1 rounded-xl border py-2.5 px-3 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 ${
+                        isAdded
+                          ? "border-[#d4af37] bg-[#d4af37] text-[#120c08]"
+                          : "border-[#d4af37]/40 bg-[#d4af37]/8 hover:bg-[#d4af37] hover:text-[#120c08] hover:border-[#d4af37] text-[#fbf8f2]"
+                      }`}
+                    >
+                      <span className={`block text-[10px] tracking-[0.18em] uppercase font-semibold mb-0.5 ${isAr ? "font-arabic tracking-normal" : ""}`}>
+                        {isAr ? v.nameAr : v.name}
+                      </span>
+                      <span className="block text-[11px] font-mono font-bold">
+                        {v.price.toLocaleString()}
+                        <span className="text-[9px] font-sans font-normal ml-0.5 opacity-80">{iqdLabel}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ) : (
+            /* ── Single-price layout ── */
+            <div>
+              <div className="flex items-baseline justify-between pt-3 border-t border-[#d4af37]/15 mb-4">
+                <span className="text-[10px] tracking-[0.2em] text-[#bdae9c] uppercase">
+                  {isAr ? "السعر" : "PRICE"}
+                </span>
+                <div className="text-right">
+                  {item.oldPrice && item.discount ? (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs text-[#8c7b6d] line-through font-mono">
+                        {item.oldPrice.toLocaleString()}
+                      </span>
+                      <span className="text-[#d4af37] text-lg font-bold font-mono tracking-tight">
+                        {item.price.toLocaleString()}{" "}
+                        <span className="text-[10px] font-sans font-normal text-[#d4af37]/80">{iqdLabel}</span>
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-[#d4af37] text-lg font-bold font-mono tracking-tight">
+                      {item.price.toLocaleString()}{" "}
+                      <span className="text-[10px] font-sans font-normal text-[#d4af37]/80">{iqdLabel}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
 
-          {/* Action Buttons: "+ ADD TO ORDER" + Details Circular Button */}
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => item.available && onAddToCart(item.id)}
-              disabled={!item.available}
-              className={`flex-1 rounded-full border border-[#d4af37]/50 text-[#fbf8f2] bg-[#d4af37]/10 hover:bg-[#d4af37] hover:text-[#120c08] hover:border-[#d4af37] px-4 py-2.5 text-[11px] tracking-[0.2em] font-medium transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed shadow-sm active:scale-95 ${
-                isAr ? "font-arabic tracking-normal text-xs" : "uppercase"
-              }`}
-            >
-              + {addToCartLabel}
-            </button>
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={handleSimpleAdd}
+                  disabled={!item.available}
+                  className={`flex-1 rounded-full border border-[#d4af37]/50 text-[#fbf8f2] bg-[#d4af37]/10 hover:bg-[#d4af37] hover:text-[#120c08] hover:border-[#d4af37] px-4 py-2.5 text-[11px] tracking-[0.2em] font-medium transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed shadow-sm active:scale-95 ${
+                    addedKey === "simple"
+                      ? "bg-[#d4af37] text-[#120c08]"
+                      : ""
+                  } ${isAr ? "font-arabic tracking-normal text-xs" : "uppercase"}`}
+                >
+                  + {addToCartLabel}
+                </button>
 
-            <button
-              onClick={() => onImageClick(item)}
-              aria-label="Dish details"
-              className="w-9 h-9 shrink-0 rounded-full border border-white/12 hover:border-[#d4af37]/60 text-white/60 hover:text-[#d4af37] bg-white/3 hover:bg-[#d4af37]/10 flex items-center justify-center transition-all duration-300 active:scale-95"
-            >
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
-            </button>
-          </div>
+                <button
+                  onClick={() => onImageClick(item)}
+                  aria-label="Dish details"
+                  className="w-9 h-9 shrink-0 rounded-full border border-white/12 hover:border-[#d4af37]/60 text-white/60 hover:text-[#d4af37] bg-white/3 hover:bg-[#d4af37]/10 flex items-center justify-center transition-all duration-300 active:scale-95"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.35-4.35" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </article>
