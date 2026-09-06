@@ -1,41 +1,94 @@
 import { config } from "@/config";
-import type { MenuItem, SheetRow, DiscountTier } from "@/types/menu";
-import { ITALIAN_MENU_ITEMS } from "@/data/italian-menu";
+import type { MenuItem, MenuItemVariant, SheetRow, DiscountTier } from "@/types/menu";
 
 function buildDriveUrl(fileId: string): string {
   if (!fileId) return "";
-  const url = config.googleDrive.imageUrlFormat.replace("{FILE_ID}", fileId);
-  return url;
+  return config.googleDrive.imageUrlFormat.replace("{FILE_ID}", fileId);
 }
 
+/**
+ * Parse a row from the Google Sheet into a MenuItem.
+ *
+ * Expected columns (header row):
+ *   Name_AR   — Arabic name (displayed in Arabic mode)
+ *   Name_EN   — English name
+ *   Category_AR — Arabic category label
+ *   Category_EN — English category label
+ *   Price       — Single price in IQD (leave blank when Small/Large used)
+ *   Small_Price — Price for Small variant (pasta). When filled, creates variants.
+ *   Large_Price — Price for Large variant (pasta).
+ *   ImageUrl    — Direct image URL (https://…) OR Google Drive file ID
+ *   Available   — TRUE / FALSE  (default TRUE)
+ *   Popular     — TRUE / FALSE
+ *   New         — TRUE / FALSE
+ *   Description — English description
+ *   Description_AR — Arabic description
+ *   Ingredients — Comma-separated ingredients
+ *   Allergens   — Allergy info
+ *   Prep_Time   — Minutes (number)
+ *   Rating      — e.g. 4.8
+ *   Sort        — Display sort order (number)
+ *   Discount    — Discount % (e.g. 10)
+ *   Old_Price   — Original price before discount
+ */
 function parseSheetRow(row: SheetRow, index: number): MenuItem {
-  const fileId = row["ImageID"] || row["ImageFileId"] || row["image_id"] || "";
+  const nameAr = (row["Name_AR"] || row["Name Arabic"] || row["name_ar"] || "").trim();
+  const nameEn = (row["Name_EN"] || row["Item Name"] || row["Name"] || row["name"] || "").trim();
+  const catAr  = (row["Category_AR"] || row["Category Arabic"] || row["category_ar"] || "").trim();
+  const catEn  = (row["Category_EN"] || row["Category"] || row["category"] || "Other").trim();
+
+  const rawImageUrl = (row["ImageUrl"] || row["ImageURL"] || row["image_url"] || "").trim();
+  const rawFileId   = (row["ImageID"]  || row["ImageFileId"] || row["image_id"] || "").trim();
+
+  // Decide image source: if rawImageUrl starts with http use directly, else treat as Drive ID
+  const isDirectUrl  = rawImageUrl.startsWith("http");
+  const imageFileId  = isDirectUrl ? rawFileId : (rawImageUrl || rawFileId);
+  const imageUrl     = isDirectUrl ? rawImageUrl : (imageFileId ? buildDriveUrl(imageFileId) : "");
+
+  const smallPrice = row["Small_Price"] ? Number(row["Small_Price"]) : null;
+  const largePrice = row["Large_Price"] ? Number(row["Large_Price"]) : null;
+  const basePrice  = Number(row["Price"] || row["price"] || 0);
+
+  // Build variants when both Small_Price and Large_Price are present
+  let variants: MenuItemVariant[] | null = null;
+  if (smallPrice && largePrice) {
+    variants = [
+      { name: "Small", nameAr: "صغير", price: smallPrice },
+      { name: "Large", nameAr: "كبير", price: largePrice },
+    ];
+  }
+
   return {
-    id: String(index),
-    name: row["Item Name"] || row["Name"] || row["name"] || "",
-    nameAr: row["Name Arabic"] || row["name_ar"] || null,
-    description: row["Description"] || row["description"] || "",
-    descriptionAr: row["Description Arabic"] || row["description_ar"] || null,
-    category: row["Category"] || row["category"] || "Other",
-    categoryAr: row["Category Arabic"] || row["category_ar"] || null,
-    price: Number(row["Price"] || row["price"] || 0),
-    imageFileId: fileId,
-    imageUrl: fileId ? buildDriveUrl(fileId) : "",
+    id: `item-${index}-${nameEn.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}` || String(index),
+    name: nameEn || nameAr,
+    nameAr: nameAr || null,
+    description: (row["Description"] || row["description"] || "").trim(),
+    descriptionAr: (row["Description_AR"] || row["description_ar"] || row["Description Arabic"] || "").trim() || null,
+    category: catEn,
+    categoryAr: catAr || null,
+    price: smallPrice || basePrice, // use smallPrice as base for variant items
+    imageFileId,
+    imageUrl,
     available: (row["Available"] || row["available"] || "true").toLowerCase() !== "false",
     sortOrder: Number(row["Sort"] || row["sort_order"] || index),
     discount: row["Discount"] ? Number(row["Discount"]) : null,
-    oldPrice: row["Old Price"] ? Number(row["Old Price"]) : null,
+    oldPrice: row["Old_Price"] || row["Old Price"] ? Number(row["Old_Price"] || row["Old Price"]) : null,
     popular: (row["Popular"] || row["popular"] || "").toLowerCase() === "true",
     isNew: (row["New"] || row["new_item"] || "").toLowerCase() === "true",
     calories: row["Calories"] ? Number(row["Calories"]) : null,
-    ingredients: row["Ingredients"] || row["ingredients"] || null,
-    allergens: row["Allergens"] || row["allergens"] || null,
-    preparationTime: row["Prep Time"] || row["preparation_time"] ? Number(row["Prep Time"] || row["preparation_time"]) : null,
+    ingredients: (row["Ingredients"] || row["ingredients"] || "").trim() || null,
+    allergens: (row["Allergens"] || row["allergens"] || "").trim() || null,
+    preparationTime: row["Prep_Time"] || row["Prep Time"] || row["preparation_time"]
+      ? Number(row["Prep_Time"] || row["Prep Time"] || row["preparation_time"])
+      : null,
     rating: row["Rating"] || row["rating"] ? Number(row["Rating"] || row["rating"]) : null,
+    variants,
   };
 }
 
-const CACHE_KEY = "menu_italianpasta_v1";
+// ─── Cache ───────────────────────────────────────────────────────────────────
+
+const CACHE_KEY = "menu_italianpasta_v2";
 let cachedData: { data: MenuItem[]; timestamp: number } | null = null;
 
 function readLocalCache(): MenuItem[] | null {
@@ -60,33 +113,32 @@ async function fetchFromSheets(): Promise<MenuItem[]> {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?key=${apiKey}`;
 
   const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Google Sheets API error: ${response.status}`);
-  }
+  if (!response.ok) throw new Error(`Google Sheets API error: ${response.status}`);
 
   const json = await response.json();
   const values: string[][] = json.values || [];
-
   if (values.length < 2) return [];
 
   const headers = values[0];
   const rows = values.slice(1);
 
-  const items = rows.map((row, i) => {
-    const rowObj: SheetRow = {};
-    headers.forEach((h, j) => {
-      rowObj[h] = row[j] || "";
-    });
-    return parseSheetRow(rowObj, i);
-  });
+  // Skip fully-empty rows
+  const items = rows
+    .filter((row) => row.some((cell) => cell.trim() !== ""))
+    .map((row, i) => {
+      const rowObj: SheetRow = {};
+      headers.forEach((h, j) => { rowObj[h] = row[j] || ""; });
+      return parseSheetRow(rowObj, i);
+    })
+    .filter((item) => item.name); // skip rows with no name
 
   return items.sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 /**
- * Stale-while-revalidate: returns cached data instantly,
- * fetches fresh data in background and updates.
- * If sheets contains non-pasta legacy items, defaults to curated La Piazza menu.
+ * Stale-while-revalidate menu fetcher.
+ * Always uses the Google Sheet as the primary source of truth.
+ * Falls back to cached data if the network is unavailable.
  */
 export async function fetchMenuData(): Promise<MenuItem[]> {
   const now = Date.now();
@@ -96,34 +148,35 @@ export async function fetchMenuData(): Promise<MenuItem[]> {
     return cachedData.data;
   }
 
-  // 2. localStorage cache (instant, persists across reloads)
+  // 2. localStorage cache — serve instantly, revalidate in background
   const local = readLocalCache();
   if (local && local.length > 0) {
     cachedData = { data: local, timestamp: now };
-    // Revalidate in background (don't block UI)
-    fetchFromSheets().then((fresh) => {
-      const isLegacy = fresh.some((i) => i.category.toLowerCase().includes("hot appetizer") || i.name.toLowerCase().includes("wing"));
-      const finalItems = isLegacy || fresh.length === 0 ? ITALIAN_MENU_ITEMS : fresh;
-      cachedData = { data: finalItems, timestamp: Date.now() };
-      writeLocalCache(finalItems);
-    }).catch(() => { /* keep using cached */ });
+    // Background revalidation
+    fetchFromSheets()
+      .then((fresh) => {
+        if (fresh.length > 0) {
+          cachedData = { data: fresh, timestamp: Date.now() };
+          writeLocalCache(fresh);
+        }
+      })
+      .catch(() => { /* keep using cached */ });
     return local;
   }
 
-  // 3. First visit — fetch or fallback to curated Italian pasta menu
+  // 3. First visit — fetch live from sheet
   try {
     const data = await fetchFromSheets();
-    const isLegacy = data.some((i) => i.category.toLowerCase().includes("hot appetizer") || i.name.toLowerCase().includes("wing"));
-    const finalData = isLegacy || data.length === 0 ? ITALIAN_MENU_ITEMS : data;
-    cachedData = { data: finalData, timestamp: now };
-    writeLocalCache(finalData);
-    return finalData;
-  } catch {
-    cachedData = { data: ITALIAN_MENU_ITEMS, timestamp: now };
-    writeLocalCache(ITALIAN_MENU_ITEMS);
-    return ITALIAN_MENU_ITEMS;
+    cachedData = { data, timestamp: now };
+    writeLocalCache(data);
+    return data;
+  } catch (err) {
+    console.error("Failed to fetch menu from Google Sheets:", err);
+    return [];
   }
 }
+
+// ─── Categories ──────────────────────────────────────────────────────────────
 
 export interface CategoryItem {
   key: string;
@@ -131,61 +184,33 @@ export interface CategoryItem {
   labelAr: string;
 }
 
-const CANONICAL_ORDER = [
-  { key: "all", labelEn: "ALL", labelAr: "الكل" },
-  { key: "CLASSIC PASTA", labelEn: "CLASSIC PASTA", labelAr: "باستا كلاسيكية" },
-  { key: "CREAM SAUCES", labelEn: "CREAM SAUCES", labelAr: "صلصات الكريمة" },
-  { key: "TOMATO SAUCES", labelEn: "TOMATO SAUCES", labelAr: "صلصات الطماطم" },
-  { key: "SEAFOOD", labelEn: "SEAFOOD", labelAr: "المأكولات البحرية" },
-  { key: "SPECIALS", labelEn: "SPECIALS", labelAr: "أطباق الشيف" },
-];
-
 export function getCategories(items: MenuItem[]): CategoryItem[] {
-  const presentCategories = new Set(items.map((i) => i.category.toUpperCase().trim()));
+  const seen = new Map<string, CategoryItem>();
+  seen.set("all", { key: "all", labelEn: "ALL", labelAr: "الكل" });
 
-  const ordered: CategoryItem[] = [];
-
-  // Always start with "all"
-  ordered.push(CANONICAL_ORDER[0]);
-
-  // Add matching canonical categories
-  CANONICAL_ORDER.slice(1).forEach((cat) => {
-    if (presentCategories.has(cat.key)) {
-      ordered.push(cat);
-      presentCategories.delete(cat.key);
-    }
-  });
-
-  // Add any remaining categories dynamically
-  items.forEach((i) => {
-    const keyUpper = i.category.toUpperCase().trim();
-    if (presentCategories.has(keyUpper)) {
-      ordered.push({
-        key: i.category,
-        labelEn: i.category.toUpperCase(),
-        labelAr: i.categoryAr || i.category,
+  items.forEach((item) => {
+    const keyUpper = item.category.trim().toUpperCase();
+    if (!seen.has(keyUpper)) {
+      seen.set(keyUpper, {
+        key: item.category.trim(),
+        labelEn: item.category.trim().toUpperCase(),
+        labelAr: item.categoryAr?.trim() || item.category.trim(),
       });
-      presentCategories.delete(keyUpper);
     }
   });
 
-  return ordered;
+  return Array.from(seen.values());
 }
 
+// ─── Discount Tiers ──────────────────────────────────────────────────────────
+
 export async function fetchDiscountTiers(): Promise<DiscountTier[]> {
-  const defaultTiers: DiscountTier[] = [
-    { min: 2, max: 3, percent: 5 },
-    { min: 4, max: 5, percent: 10 },
-    { min: 6, max: Infinity, percent: 15 },
-  ];
   const { spreadsheetId, apiKey } = config.googleSheets;
   const range = `${config.googleSheets.discountSheetName}!A:Z`;
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?key=${apiKey}`;
 
   const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Google Sheets API error: ${response.status}`);
-  }
+  if (!response.ok) throw new Error(`Google Sheets API error: ${response.status}`);
 
   const json = await response.json();
   const values: string[][] = json.values || [];
@@ -210,6 +235,8 @@ export async function fetchDiscountTiers(): Promise<DiscountTier[]> {
   return tiers.sort((a, b) => a.min - b.min);
 }
 
+// ─── Discount State ───────────────────────────────────────────────────────────
+
 export interface DiscountState {
   currentPercent: number;
   firstTier: DiscountTier;
@@ -228,26 +255,16 @@ export function getDiscountState(tiers: DiscountTier[], quantity: number): Disco
   let nextTier: DiscountTier | null = null;
 
   for (const tier of sorted) {
-    // The highest tier has no effective upper bound — it covers everything from its min up.
     const max = tier === highestTier ? Infinity : tier.max;
-    if (quantity >= tier.min && quantity <= max) {
-      currentPercent = tier.percent;
-    }
-    if (!nextTier && tier.min > quantity) {
-      nextTier = tier;
-    }
+    if (quantity >= tier.min && quantity <= max) currentPercent = tier.percent;
+    if (!nextTier && tier.min > quantity) nextTier = tier;
   }
 
-  const highestReached = quantity >= highestTier.min;
-
-  return { currentPercent, firstTier, highestTier, nextTier, highestReached };
+  return { currentPercent, firstTier, highestTier, nextTier, highestReached: quantity >= highestTier.min };
 }
 
-/**
- * Fetches the WhatsApp phone number from the Phone_number sheet.
- * The number should be in cell A1 in international format without the + sign (e.g. 9647700000000).
- * Falls back to an empty string if the sheet is unreachable.
- */
+// ─── Phone Number ─────────────────────────────────────────────────────────────
+
 let cachedPhone: string | null = null;
 
 export async function fetchWhatsAppPhone(): Promise<string> {
