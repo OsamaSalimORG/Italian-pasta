@@ -182,14 +182,7 @@ export function MenuLightbox({
                 {item.preparationTime ?? 18} {isAr ? "دقيقة" : "mins"}
               </span>
             </div>
-            <div>
-              <span className="block text-[10px] tracking-[0.2em] text-[#bdae9c] uppercase">
-                {isAr ? "السعرات" : "CALORIES"}
-              </span>
-              <span className="text-sm font-semibold text-[#fbf8f2] mt-0.5 block">
-                {item.calories ?? 620} {isAr ? "سعرة" : "kcal"}
-              </span>
-            </div>
+
           </div>
 
           {/* Ingredients list */}

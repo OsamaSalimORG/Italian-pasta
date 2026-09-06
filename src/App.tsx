@@ -513,11 +513,7 @@ export default function App() {
 
       {/* ============ FLOATING CART BUTTON ============ */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
-        {discountTiers.length > 0 && (
-          <span className="glass-italian rounded-full px-3.5 py-1 text-[9px] tracking-[0.22em] text-[#d4af37] shadow-[0_4px_15px_rgba(212,175,55,0.25)] border border-[#d4af37]/35 whitespace-nowrap font-medium">
-            {t.addMoreSaveMore}
-          </span>
-        )}
+
         <button
           onClick={() => setCartOpen(true)}
           className="relative w-14 h-14 rounded-full bg-[#1c1510] text-[#d4af37] border border-[#d4af37]/50 grid place-items-center hover:scale-108 transition-all duration-300 shadow-[0_12px_35px_rgba(0,0,0,0.8),0_0_20px_rgba(212,175,55,0.25)] hover:bg-[#d4af37] hover:text-[#120c08]"
