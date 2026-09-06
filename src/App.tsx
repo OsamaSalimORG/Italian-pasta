@@ -132,7 +132,7 @@ export default function App() {
   }, []);
 
   // Menu data from Google Sheets or fallback authentic Italian catalog
-  const { items, loading, error, categories, discountTiers } = useMenuData();
+  const { items, loading, error, categories, discountTiers, whatsappPhone } = useMenuData();
   const { search, setSearch, activeCategory, setActiveCategory, filtered } = useMenuFilter(items);
 
   // Cart & State
@@ -210,21 +210,12 @@ export default function App() {
       `Grazie mille! 🇮🇹`,
     ].join("\n");
 
-    const phone = "9647729204005";
+    const phone = whatsappPhone || "9647700000000";
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
   }, [
-    cart,
-    items,
-    custName,
-    custPhone,
-    custAddress,
-    custPickupTime,
-    subtotal,
-    totalAfterDiscount,
-    discountPercent,
-    discountAmount,
-    isAr,
+    cart, items, custName, custPhone, custAddress, custPickupTime,
+    subtotal, totalAfterDiscount, discountPercent, discountAmount, isAr, whatsappPhone,
   ]);
 
   useEffect(() => {
@@ -449,7 +440,7 @@ export default function App() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
-              href="https://wa.me/9647729204005?text=Hello%2C%20I%20would%20like%20to%20reserve%20a%20table%20at%20La%20Piazza."
+              href={`https://wa.me/${whatsappPhone || "9647700000000"}?text=Hello%2C%20I%20would%20like%20to%20reserve%20a%20table%20at%20Italian%20Pasta.`}
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-full bg-[#d4af37] text-[#120c08] hover:bg-[#e5c158] px-8 py-3.5 text-xs tracking-[0.25em] font-semibold transition-all duration-300 shadow-[0_6px_25px_-5px_rgba(212,175,55,0.45)] uppercase"

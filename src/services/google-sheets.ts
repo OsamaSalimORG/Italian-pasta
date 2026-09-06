@@ -242,3 +242,29 @@ export function getDiscountState(tiers: DiscountTier[], quantity: number): Disco
 
   return { currentPercent, firstTier, highestTier, nextTier, highestReached };
 }
+
+/**
+ * Fetches the WhatsApp phone number from the Phone_number sheet.
+ * The number should be in cell A1 in international format without the + sign (e.g. 9647700000000).
+ * Falls back to an empty string if the sheet is unreachable.
+ */
+let cachedPhone: string | null = null;
+
+export async function fetchWhatsAppPhone(): Promise<string> {
+  if (cachedPhone !== null) return cachedPhone;
+
+  const { spreadsheetId, apiKey, phoneSheetName } = config.googleSheets;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(phoneSheetName + "!A1")}?key=${apiKey}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const json = await response.json();
+    const raw: string = (json.values?.[0]?.[0] ?? "").trim().replace(/\D/g, "");
+    cachedPhone = raw;
+    return raw;
+  } catch {
+    cachedPhone = "";
+    return "";
+  }
+}

@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
-import { fetchMenuData, fetchDiscountTiers, getCategories } from "@/services/google-sheets";
+import { fetchMenuData, fetchDiscountTiers, getCategories, fetchWhatsAppPhone } from "@/services/google-sheets";
 import type { MenuItem, DiscountTier } from "@/types/menu";
 
 export function useMenuData() {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [discountTiers, setDiscountTiers] = useState<DiscountTier[]>([]);
+  const [whatsappPhone, setWhatsappPhone] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,6 +22,12 @@ export function useMenuData() {
           setDiscountTiers(await fetchDiscountTiers());
         } catch {
           setDiscountTiers([]);
+        }
+        try {
+          const phone = await fetchWhatsAppPhone();
+          if (!cancelled) setWhatsappPhone(phone);
+        } catch {
+          // keep empty string fallback
         }
       } catch (err) {
         if (!cancelled) {
@@ -41,7 +48,7 @@ export function useMenuData() {
 
   const categories = useMemo(() => getCategories(items), [items]);
 
-  return { items, loading, error, categories, discountTiers };
+  return { items, loading, error, categories, discountTiers, whatsappPhone };
 }
 
 export function useMenuFilter(items: MenuItem[]) {

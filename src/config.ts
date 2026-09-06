@@ -4,6 +4,7 @@ export const config = {
     apiKey: "AIzaSyBwjRABXS_K3qAaPPef54jb478SAA-3_Bk",
     sheetName: "Sheet1",
     discountSheetName: "discount",
+    phoneSheetName: "Phone_number",
   },
   googleDrive: {
     imageUrlFormat: "https://drive.google.com/uc?export=view&id={FILE_ID}",
